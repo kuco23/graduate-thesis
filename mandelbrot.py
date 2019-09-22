@@ -3,6 +3,7 @@ import os
 
 ITERCOUNT = 40
 PIXELS = 1000
+BASE_GRADIENT = (255, 255, 255)
 PPM_HEADER = ['P3\n', f'{PIXELS} {PIXELS}\n', '255\n']
 
 open('mandelbrot.ppm', 'a').close()
@@ -31,9 +32,7 @@ for i in range(PIXELS):
         point = setPoint(i, j)
         count = pointConvergance(point)
         base = (255 * count) // ITERCOUNT if count < ITERCOUNT else 0
-        r = base
-        g = base
-        b = base
+        r, g, b = map(lambda c: (c / 255) * base, BASE_GRADIENT)
         rgb = f'{r} {g} {b}  '
         file.write(rgb)
 
