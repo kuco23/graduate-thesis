@@ -1,40 +1,42 @@
-import sys
-import os
-
 ITERCOUNT = 40
-PIXELS = 1000
-BASE_GRADIENT = (255, 255, 255)
+EPS = 2
+
+PIXELS = 600
+RANGEX = (-2, 2)
+RANGEY = (-2, 2)
+
+BASE_GRADIENT = (255, 111, 204)
+
+PPM_FILE = 'mandelbrot.ppm'
 PPM_HEADER = ['P3\n', f'{PIXELS} {PIXELS}\n', '255\n']
 
-open('mandelbrot.ppm', 'a').close()
-file = open('mandelbrot.ppm', 'w', encoding='ascii')
+open(PPM_FILE, 'a').close()
+file = open(PPM_FILE, 'w', encoding='ascii')
+for h in PPM_HEADER: file.write(h)
 
-for h in PPM_HEADER:
-    file.write(h)
-
-mbFun = lambda z, c: z * z + c
+iterFun = lambda z, c: z * z + c
 
 def pointConvergance(point):
     z, count = complex(0, 0), 0
-    while count < ITERCOUNT and abs(z) <= 2:
-        z = mbFun(z, point)
+    while count < ITERCOUNT and abs(z) <= EPS:
+        z = iterFun(z, point)
         count += 1
     return count
 
 def setPoint(i, j):
-    x = 2.4 * i / PIXELS - 1.8
-    y = 2.4 * j / PIXELS - 1.2
+    (a, b), (c, d) = RANGEX, RANGEY
+    x = i / PIXELS * (b - a) + a
+    y = j / PIXELS * (d - c) + c
     return complex(x, y)
 
-for i in range(PIXELS):
+for j in range(PIXELS):
     file.write('\n')
-    for j in range(PIXELS):
+    for i in range(PIXELS):
         point = setPoint(i, j)
         count = pointConvergance(point)
-        base = (255 * count) // ITERCOUNT if count < ITERCOUNT else 0
+        base = (255 * count) // ITERCOUNT * (count < ITERCOUNT)
         r, g, b = map(lambda c: (c / 255) * base, BASE_GRADIENT)
-        rgb = f'{r} {g} {b}  '
-        file.write(rgb)
+        file.write(f'{r} {g} {b}  ')
 
 file.flush()
 file.close()

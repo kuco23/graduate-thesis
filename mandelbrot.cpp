@@ -6,10 +6,10 @@
 using std::complex;
 using std::ofstream;
 using std::endl;
-using std::getchar;
 using std::floor;
 
 #define ITERCOUNT 20
+#define EPS 2
 #define PIXELS 600
 #define QUOT 2.4 / PIXELS
 
@@ -21,7 +21,7 @@ mbtFun(complex<double> z, complex<double> c) {
 int convergance(complex<double> point) {
   int count = 0;
   complex<double> z (0, 0);
-  while (count < ITERCOUNT && abs(z) <= 2) {
+  while (count < ITERCOUNT && abs(z) <= EPS) {
     z = mbtFun(z, point);
     count++;
   }
@@ -36,7 +36,7 @@ complex<double> setPoint(int i, int j) {
 
 int main( void ) {
   ofstream ppm;
-  ppm.open("mandelbrot_pics/mandelbrot.ppm");
+  ppm.open("mandelbrot.ppm");
 
   ppm << "P3" << endl;
   ppm << PIXELS << " " << PIXELS << endl;
