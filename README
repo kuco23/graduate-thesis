@@ -1,1 +1,10 @@
 fractal-scripts
+An effort at drawing various types of fractals.
+
+Until now the focus has been the Mandelbrot set
+and Julia sets of the map z -> z ^ 2 + C for various
+complex constants C.
+
+Algorithms take advantage of a theorem, which states 
+that if |z| > max(|C|, 2), then iterations of map
+z -> z ^ 2 + C will diverge towards infinity.

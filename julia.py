@@ -1,38 +1,39 @@
-PIXELS = 1000
+DIMS = 1000
 RANGEX = (-2, 2)
 RANGEY = (-2, 2)
-COLOR = (255, 111, 204)
+COLOR = (255, 0, 0)
 
-PPM_FILE = 'mandelbrot.ppm'
-PPM_HEADER = ['P3\n', f'{PIXELS} {PIXELS}\n', '255\n']
+PPM_FILE = 'julia.ppm'
+PPM_HEADER = ('P3\n', f'{DIMS} {DIMS}\n', '255\n')
 
-iterlim = 40
-iterFun = lambda z, c: z * z + c
+C = complex(-1.2, -0.2)
+ITERLIM = 100
+ITEREPS = max(abs(C), 2)
+ITERFUN = lambda z: z ** 2 + C
 
 def pointConvergance(point):
-    z, count = complex(0, 0), 0
-    eps = max(2, abs(point))
-    while count < iterlim and abs(z) <= eps:
-        z = iterFun(z, point)
+    count = 0
+    while count < ITERLIM and abs(point) <= ITEREPS:
+        point = ITERFUN(point)
         count += 1
     return count
 
 def setPoint(i, j):
     (a, b), (c, d) = RANGEX, RANGEY
-    x = i / PIXELS * (b - a) + a
-    y = j / PIXELS * (d - c) + c
+    x = i / DIMS * (b - a) + a
+    y = j / DIMS * (d - c) + c
     return complex(x, y)
 
 open(PPM_FILE, 'a').close()
 file = open(PPM_FILE, 'w', encoding='ascii')
 for h in PPM_HEADER: file.write(h)
 
-for j in range(PIXELS):
+for j in range(DIMS):
     file.write('\n')
-    for i in range(PIXELS):
+    for i in range(DIMS):
         point = setPoint(i, j)
         count = pointConvergance(point)
-        base = (255 * count) // iterlim * (count < iterlim)
+        base = (255 * count) // ITERLIM * (count < ITERLIM)
         r, g, b = map(lambda c: (c / 255) * base, COLOR)
         file.write(f'{r} {g} {b}  ')
 
