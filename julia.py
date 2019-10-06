@@ -1,41 +1,113 @@
-DIMS = 1000
-RANGEX = (-2, 2)
-RANGEY = (-2, 2)
-COLOR = (255, 0, 0)
+from functools import reduce
+from os import mkdir
+from os.path import isdir
 
-PPM_FILE = 'julia.ppm'
-PPM_HEADER = ('P3\n', f'{DIMS} {DIMS}\n', '255\n')
+class PolynomialJuliaImage:
 
-C = complex(-1.2, -0.2)
-ITERLIM = 100
-ITEREPS = max(abs(C), 2)
-ITERFUN = lambda z: z ** 2 + C
+    def __init__(
+        self, koefs,
+        dims, rangex, rangey,
+        color
+    ):
+        self.koefs = koefs
+        self.deg = len(koefs) - 1
+        
+        self.dims = dims
+        self.rangex = rangex
+        self.rangey = rangey
+        self.color = color
 
-def pointConvergance(point):
-    count = 0
-    while count < ITERLIM and abs(point) <= ITEREPS:
-        point = ITERFUN(point)
-        count += 1
-    return count
+        self._lim = 50
+        self._lmbd = 1.00001
 
-def setPoint(i, j):
-    (a, b), (c, d) = RANGEX, RANGEY
-    x = i / DIMS * (b - a) + a
-    y = j / DIMS * (d - c) + c
-    return complex(x, y)
+        an = abs(koefs[0])
+        C = sum(map(abs, koefs)) - an
+        lmbdeps = pow(2 * self._lmbd / an, 1 / (self.deg-1))
+        self._eps = max(1, 2 * C / 2, lmbdeps)
 
-open(PPM_FILE, 'a').close()
-file = open(PPM_FILE, 'w', encoding='ascii')
-for h in PPM_HEADER: file.write(h)
+    def _horner(self, z):
+        return reduce(lambda x, y: z * x + y, self.koefs)
 
-for j in range(DIMS):
-    file.write('\n')
-    for i in range(DIMS):
-        point = setPoint(i, j)
-        count = pointConvergance(point)
-        base = (255 * count) // ITERLIM * (count < ITERLIM)
-        r, g, b = map(lambda c: (c / 255) * base, COLOR)
-        file.write(f'{r} {g} {b}  ')
+    def _converganceIterations(self, z):
+        count = 0
+        while count < self._lim and abs(z) <= self._eps:
+            z = self._horner(z)
+            count += 1
+        return count
 
-file.flush()
-file.close()
+    def _converganceRGB(self, count):
+        if count == self._lim: return (0,0,0)
+        base = (255 * count) // self._lim
+        return tuple(map(
+            lambda c: int(c / 255 * base),
+            self.color
+        ))
+
+    def _coordsToPoint(self, i, j):
+        (a, b), (c, d) = self.rangex, self.rangey
+        x = i / self.dims * (b - a) + a
+        y = j / self.dims * (d - c) + c
+        return complex(x, y)
+
+    def _writeHeaderPPM(self, file):
+        dim = self.dims
+        ppmHeader = ('P3\n', f'{dim} {dim}\n', '255\n')
+        for h in ppmHeader: file.write(h)
+
+    def drawPPM(self, file):
+        self._writeHeaderPPM(file)
+        for j in range(self.dims):
+            file.write('\n')
+            for i in range(self.dims):
+                point = self._coordsToPoint(i, j)
+                count = self._converganceIterations(point)
+                file.write('{0} {1} {2}  '.format(
+                    *self._converganceRGB(count)
+                ))
+                
+if __name__ == '__main__':
+
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument(
+        'koefs', metavar = 'polynomial koeficients',
+        type = str
+    )
+    args.add_argument(
+        '-d', metavar = 'image dimensions',
+        type = int, default = 800
+    )
+    args.add_argument(
+        '-rx', metavar = 'range x',
+        type = int, nargs = 2,
+        default = [-2, 2]
+    )
+    args.add_argument(
+        '-ry', metavar = 'range y',
+        type = int, nargs = 2,
+        default = [-2, 2]
+    )
+    args.add_argument(
+        '-n', metavar = 'file name',
+        type = str, default = 'julia'
+    )
+    args.add_argument(
+        '-rgb', metavar = 'image color',
+        type = int, nargs = 3,
+        default = [255, 0, 0]
+    )
+    vals = args.parse_args()
+
+    koefs = list(map(complex, vals.koefs.split()))
+    image = PolynomialJuliaImage(
+        koefs, vals.d,
+        vals.rx, vals.ry,
+        vals.rgb
+    )
+
+    if not isdir('images'): mkdir('images')
+    filename = f'images/{vals.n}.ppm'
+    open(filename, 'a').close()
+    with open(filename, 'w', encoding='ascii') as file:
+        image.drawPPM(file)
