@@ -1,40 +1,66 @@
-PIXELS = 1000
-RANGEX = (-2, 2)
-RANGEY = (-2, 2)
-COLOR = (255, 111, 204)
-
-PPM_FILE = 'mandelbrot.ppm'
-PPM_HEADER = ['P3\n', f'{PIXELS} {PIXELS}\n', '255\n']
-
 iterlim = 40
 iterFun = lambda z, c: z * z + c
 
-def pointConvergance(point):
-    z, count = complex(0, 0), 0
-    eps = max(2, abs(point))
-    while count < iterlim and abs(z) <= eps:
-        z = iterFun(z, point)
-        count += 1
-    return count
+def writePPM(file, px, re, im, col):
+    (r1, r2), (i1, i2) = re, im
 
-def setPoint(i, j):
-    (a, b), (c, d) = RANGEX, RANGEY
-    x = i / PIXELS * (b - a) + a
-    y = j / PIXELS * (d - c) + c
-    return complex(x, y)
+    def setPoint(i, j):
+        x = i / px * (r2 - r1) + r1
+        y = j / px * (i2 - i1) + i1
+        return complex(x, y)
 
-open(PPM_FILE, 'a').close()
-file = open(PPM_FILE, 'w', encoding='ascii')
-for h in PPM_HEADER: file.write(h)
+    def pointConvergance(point):
+        eps = max(2, abs(point))
+        z, count = complex(0, 0), 0
+        while count < iterlim and abs(z) <= eps:
+            z = iterFun(z, point)
+            count += 1
+        return count
 
-for j in range(PIXELS):
-    file.write('\n')
-    for i in range(PIXELS):
-        point = setPoint(i, j)
-        count = pointConvergance(point)
-        base = (255 * count) // iterlim * (count < iterlim)
-        r, g, b = map(lambda c: (c / 255) * base, COLOR)
-        file.write(f'{r} {g} {b}  ')
+    ppm_header = ['P3\n', f'{px} {px}\n', '255\n']
+    for h in ppm_header: file.write(h)
+        
+    for j in range(px):
+        file.write('\n')
+        for i in range(px):
+            point = setPoint(i, j)
+            count = pointConvergance(point)
+            base = (255 * count) // iterlim * (count < iterlim)
+            r, g, b = map(lambda c: (c / 255) * base, col)
+            file.write(f'{r} {g} {b}  ')
+            
 
-file.flush()
-file.close()
+if __name__ == '__main__':
+
+    from argparse import ArgumentParser
+
+    args = ArgumentParser()
+    args.add_argument(
+        '-re', metavar='real axis range',
+        type=float, nargs=2,
+        default=(-2, 2)
+    )
+    args.add_argument(
+        '-im', metavar='imaginary axis range',
+        type=float, nargs=2,
+        default=(-2, 2)
+    )
+    args.add_argument(
+        '-rgb', metavar='color gradient',
+        type=float, nargs=3,
+        default=(256, 0, 0)
+    )
+    args.add_argument(
+        '-fn', metavar='file name',
+        type=str, default='mandelbrot'
+    )
+    args.add_argument(
+        '-px', metavar='n x n pixels',
+        type=int, default=1000
+    )
+    vals = args.parse_args()
+
+    ppm_file = vals.fn + '.ppm'
+    open(ppm_file, 'a').close()
+    with open(ppm_file, 'w', encoding='ascii') as f:
+        writePPM(f, vals.px, vals.re, vals.im, vals.rgb)
