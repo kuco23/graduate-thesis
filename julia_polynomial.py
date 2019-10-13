@@ -71,6 +71,7 @@ class PolynomialJuliaImage:
 
     def drawPPM(self, file):
         self._drawPPM_escapetime(file)
+        
                 
 if __name__ == '__main__':
 
@@ -86,17 +87,17 @@ if __name__ == '__main__':
         type = int, default = 800
     )
     args.add_argument(
-        '-rx', metavar = 'range x',
+        '-re', metavar = 'real axis range',
         type = int, nargs = 2,
         default = [-2, 2]
     )
     args.add_argument(
-        '-ry', metavar = 'range y',
+        '-im', metavar = 'imaginary axis range',
         type = int, nargs = 2,
         default = [-2, 2]
     )
     args.add_argument(
-        '-n', metavar = 'file name',
+        '-nm', metavar = 'file name',
         type = str, default = 'julia'
     )
     args.add_argument(
@@ -109,12 +110,12 @@ if __name__ == '__main__':
     coefs = list(map(complex, vals.coefs.split()))
     image = PolynomialJuliaImage(
         coefs, vals.d,
-        vals.rx, vals.ry,
+        vals.re, vals.im,
         vals.rgb
     )
 
     if not isdir('images'): mkdir('images')
-    filename = f'images/{vals.n}.ppm'
+    filename = f'images/{vals.nm}.ppm'
     open(filename, 'a').close()
     with open(filename, 'w', encoding='ascii') as file:
         image.drawPPM(file)

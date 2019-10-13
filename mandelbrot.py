@@ -1,5 +1,10 @@
+"""
+draw one instance of the mandelbrot 
+set with custom parameters
+"""
+
 iterlim = 40
-iterFun = lambda z, c: z * z + c
+iterfun = lambda z, c: z * z + c
 
 def writePPM(file, px, re, im, col):
     (r1, r2), (i1, i2) = re, im
@@ -13,9 +18,14 @@ def writePPM(file, px, re, im, col):
         eps = max(2, abs(point))
         z, count = complex(0, 0), 0
         while count < iterlim and abs(z) <= eps:
-            z = iterFun(z, point)
+            z = iterfun(z, point)
             count += 1
         return count
+    
+    def getGradientBase(count):
+        if count == iterlim:
+            return 0
+        return (255 * count) // iterlim
 
     ppm_header = ['P3\n', f'{px} {px}\n', '255\n']
     for h in ppm_header: file.write(h)
@@ -25,7 +35,7 @@ def writePPM(file, px, re, im, col):
         for i in range(px):
             point = setPoint(i, j)
             count = pointConvergance(point)
-            base = (255 * count) // iterlim * (count < iterlim)
+            base = getGradientBase(count)
             r, g, b = map(lambda c: (c / 255) * base, col)
             file.write(f'{r} {g} {b}  ')
             
