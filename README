@@ -1,5 +1,6 @@
-fractal-scripts
-An effort at drawing various types of fractals.
+Complex Polynomial Dynamics
+An effort at drawing various types of fractals,
+through the complex polynomial iteration.
 
 Until now the focus has been the Mandelbrot set
 and Julia sets of the map z -> z ^ 2 + C for various
