@@ -1,8 +1,8 @@
-#include <iostream>
-#include <string>
 #include <cmath>
-#include <fstream>
 #include <complex>
+#include <string>
+#include <iostream>
+#include <fstream>
 
 using std::complex;
 using std::floor;
@@ -19,12 +19,12 @@ double re0 = -2, re1 = 2;
 double im0 = -2, im1 = 2;
 complex<double> center (-2, 0);
 
-complex<double>
-mbfun(complex<double> z, complex<double> c) {
+inline complex<double>
+mbfun(const complex<double> &z, const complex<double> &c) {
   return z * z + c;
 }
 
-int convergance(complex<double> point) {
+int convergance(const complex<double> &point) {
   double eps = max(abs(point), 2.0);
   int count = 0;
   complex<double> z (0, 0);
@@ -36,7 +36,7 @@ int convergance(complex<double> point) {
 }
 
 complex<double> 
-setPoint(int i, int j) {
+coordTranslate(const int &i, const int &j) {
   double x = (double) i * (re1 - re0) / PX + re0;
   double y = (double) j * (im1 - im0) / PX + im0;
   return complex<double> (x, y);
@@ -58,8 +58,7 @@ void writePPM(string filename) {
 
   for (int j = 0; j < PX; j++) {
     for (int i = 0; i < PX; i++) {
-      complex<double> point = setPoint(i, j);
-      int count = convergance(point);
+      int count = convergance(coordTranslate(i, j));
       ppm << setGradient(count) << " 0 0  ";
     }
     ppm << endl;

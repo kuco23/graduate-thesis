@@ -3,26 +3,29 @@ from os import mkdir
 from os.path import isdir
 
 def drawJuliaPolynomialPPM_escapetime(
-    coefs, dims, rangex, rangey, color, file
+    coefs, dims, range_re, range_im, color, file
 ):
     iterlim = 50
-    lambd = 1.0001
+    L = 1.0001
+    
     n = len(coefs) - 1
     an = abs(coefs[0])
     C = sum(map(abs, coefs)) - an
-    eps = max(1, 2 * C / 2, pow(2 * lambd / an, 1 / (n-1)))
+    eps = max(1, 2 * C / 2, pow(2 * L / an, 1 / (n-1)))
 
-    def _horner(z):
+    (ReS, ReT), (ImS, ImT) = range_re, range_im
+
+    def horner(z):
         return reduce(lambda x, y: z * x + y, coefs)
 
-    def _converganceIterations(z):
+    def converganceIterations(z):
         count = 0
         while count < iterlim and abs(z) <= eps:
-            z = _horner(z)
+            z = horner(z)
             count += 1
         return count
 
-    def _converganceRGB(count):
+    def converganceRGB(count):
         if count == iterlim: return (0,0,0)
         base = (255 * count) // iterlim
         return tuple(map(
@@ -30,10 +33,9 @@ def drawJuliaPolynomialPPM_escapetime(
             color
         ))
 
-    def _coordsToPoint(i, j):
-        (a, b), (c, d) = rangex, rangey
-        x = i / dims * (b - a) + a
-        y = j / dims * (d - c) + c
+    def coordsToPoint(i, j):
+        x = i / dims * (ReT - ReS) + ReS
+        y = j / dims * (ImT - ImS) + ImS
         return complex(x, y)
 
     ppmHeader = ('P3\n', f'{dims} {dims}\n', '255\n')
@@ -42,10 +44,10 @@ def drawJuliaPolynomialPPM_escapetime(
     for j in range(dims):
         file.write('\n')
         for i in range(dims):
-            point = _coordsToPoint(i, j)
-            count = _converganceIterations(point)
+            point = coordsToPoint(i, j)
+            count = converganceIterations(point)
             file.write('{0} {1} {2}  '.format(
-                *_converganceRGB(count)
+                *converganceRGB(count)
             ))
 
 
