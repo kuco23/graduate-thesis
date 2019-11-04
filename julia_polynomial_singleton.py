@@ -13,6 +13,8 @@ def drawJuliaPolynomialPPM_escapetime(
     C = sum(map(abs, coefs)) - an
     eps = max(1, 2 * C / 2, pow(2 * L / an, 1 / (n-1)))
 
+    if not (range_re and range_im):
+        range_re, range_im = (-eps, eps), (-eps, eps)
     (ReS, ReT), (ImS, ImT) = range_re, range_im
 
     def horner(z):
@@ -67,12 +69,12 @@ if __name__ == '__main__':
     args.add_argument(
         '-re', metavar = 'real axis range',
         type = int, nargs = 2,
-        default = [-2, 2]
+        default = None
     )
     args.add_argument(
         '-im', metavar = 'imaginary axis range',
         type = int, nargs = 2,
-        default = [-2, 2]
+        default = None
     )
     args.add_argument(
         '-nm', metavar = 'file name',
