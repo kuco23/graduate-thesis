@@ -1,23 +1,20 @@
-#include <cmath>
 #include <complex>
+#include <vector>
+#include <cmath>
+#include <algorithm>
 #include <string>
 #include <iostream>
 #include <fstream>
 
-#include <random>
-#include <chrono>
-
 using std::complex;
-using std::ofstream;
+using std::vector;
 using std::string;
+using std::ofstream;
 using std::endl;
-using namespace std::chrono;
 
 #define PIXELS 1200
 #define ITERLIM 50
-#define NIMAGES 100
-
-int r = 255, g = 0, b = 0;
+#define NIMAGES 1
 
 double t0 = -0.8;
 double t1 = 0.8;
@@ -27,7 +24,15 @@ complex<double> path(double t) {
   return complex<double>(-1.2 + std::abs(t), t);
 }
 
-int convergance(complex<double> z, complex<double>& c, double& eps) {
+inline complex<double> 
+horner(const vector<complex<double>> &coefs, const complex<double> &z) {
+  complex<double> sum (0, 0);
+  for (int i = coefs.size() - 1; i >= 0; i--)
+    sum += sum * z + coefs[i];
+  return sum;
+}
+
+int convergance(complex<double> z, complex<double> &c, double &eps) {
   int count = 1;
   while (count < ITERLIM && abs(z) <= eps) {
     z = pow(z, 2) + c;
@@ -36,22 +41,15 @@ int convergance(complex<double> z, complex<double>& c, double& eps) {
   return count;
 }
 
-complex<double> coordTranslate(int& i, int& j) {
+complex<double> coordTranslate(const int &i, const int &j) {
   double x = 4 * (double) i / PIXELS - 2;
   double y = 4 * (double) j / PIXELS - 2;
   return complex<double> (x, y);
 }
 
-inline double gradientRatio(int &count) {
-  return (count == ITERLIM) ? 0 : (double) count / ITERLIM;
-}
-
-inline void ppmBasicStream(ofstream &ppm, double &ratio) {
-  ppm << ratio * std::floor(255) << " 0 0  ";
-}
-
-void ppmAdvancedStream(ofstream &ppm, double &ratio) {
-  ppm << r * ratio << " " << g * ratio << " " << b * ratio << "  ";
+inline void ppmBasicColorStream(ofstream &ppm, const int &count) {
+  double ratio = (count == ITERLIM) ? 0 : (double) count / ITERLIM;
+  ppm << std::floor(ratio * 255) << " 0 0  ";
 }
 
 void writeJuliaPpm(complex<double> c, string filename) {
@@ -67,8 +65,7 @@ void writeJuliaPpm(complex<double> c, string filename) {
   for (int j = 0; j < PIXELS; j++) {
     for (int i = 0; i < PIXELS; i++) {
       int count = convergance(coordTranslate(i, j), c, eps);
-      double ratio = gradientRatio(count);
-      ppmBasicStream(ppm, ratio);
+      ppmBasicColorStream(ppm, count);
     }
     ppm << endl;
   }

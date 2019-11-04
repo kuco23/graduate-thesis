@@ -21,7 +21,7 @@ fourc = cv2.VideoWriter_fourcc(*'DIVX')
 video = cv2.VideoWriter(
     vals.name + '.avi',
     fourc,
-    12, (width, height)
+    15, (width, height)
 )
 
 for img in imgs: video.write(img)
