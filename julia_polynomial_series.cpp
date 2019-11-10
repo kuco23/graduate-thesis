@@ -9,6 +9,7 @@
 
 using std::complex;
 using std::vector;
+using std::pair;
 using std::string;
 using std::ofstream;
 using std::endl;
@@ -16,13 +17,10 @@ using std::max;
 using std::min;
 using std::floor;
 
+#define M_PI 3.14159265358979323846
 #define PIXELS 1200
 #define ITERLIM 50
 #define NIMAGES 100
-
-double t0 = -1;
-double t1 = 2;
-double step = (t1 - t0) / NIMAGES;
 
 // define a path in a cartesian product of complex planes
 // through which a series of julia sets will be plotted
@@ -71,23 +69,43 @@ int convergance(
   return count;
 }
 
-complex<double> coordTranslate(const int &i, const int &j, const double &eps) {
+inline complex<double> coordTranslate(
+  const int &i, const int &j, const double &eps
+) {
   double x = 2 * eps * (double) i / PIXELS - eps;
   double y = 2 * eps * (double) j / PIXELS - eps;
   return complex<double> (x, y);
 }
 
+inline complex<double> circle(
+  const double &phi, const double &r
+) {
+  return complex<double>(
+    r * std::cos(phi), r * std::sin(phi)
+  );
+}
+
 // convergence limit based on a test simulation
-// return abs(z) for which the convergence 'starts'
-double getSimulatedEps(const vector<complex<double>> &coefs, const double &itereps) {
-  complex<double> z_middle;
-  int i = floor(PIXELS / 2);
-  for (int j = 0; j < PIXELS; j++) {
-    complex<double> z_middle = coordTranslate(j, i, itereps);
-    int count = convergance(z_middle, coefs, itereps);
-    if (count > 2) return abs(z_middle);
+double getSimulatedEps(
+  const vector<complex<double>> &coefs, 
+  const double &itereps,
+  const int &splitnum
+) {
+  double maxradius = 0;
+  double r = 1 / (double) PIXELS;
+  double dphi = M_PI / (double) itereps;
+  for (double phi = 0; phi < M_PI; phi += dphi) {
+    complex<double> dz = circle(phi, r);
+    for (complex<double> z = 0; abs(z) < itereps; z += dz) {
+      int count = convergance(z, coefs, itereps);
+      if (count < 3) {
+        double z_radius = abs(z);
+        if (maxradius < z_radius) maxradius = z_radius;
+        break;
+      }
+    }
   }
-  return itereps;
+  return (maxradius == 0) ? itereps : maxradius;
 }
 
 inline void ppmBasicColorStream(ofstream &ppm, const int &count) {
@@ -95,9 +113,11 @@ inline void ppmBasicColorStream(ofstream &ppm, const int &count) {
   ppm << floor(ratio * 255) << " 0 0  ";
 }
 
-void writeJuliaPpm(vector<complex<double>> &coefs, string filename) {
+void writeJuliaPpm(
+  vector<complex<double>> &coefs, string filename
+) {
   double theor_eps = getTheoreticEps(coefs);
-  double simul_eps = getSimulatedEps(coefs, theor_eps);
+  double simul_eps = getSimulatedEps(coefs, theor_eps, 10);
 
   ofstream ppm;
   ppm.open(filename);
@@ -118,6 +138,8 @@ void writeJuliaPpm(vector<complex<double>> &coefs, string filename) {
 }
 
 int main( void ) {
+  double t0 = -1, t1 = 2;
+  double step = (t1 - t0) / NIMAGES;
   double t = t0;
   for (int i = 0; i < NIMAGES; i++) {
     t += step;
