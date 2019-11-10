@@ -19,23 +19,26 @@ using std::floor;
 
 #define M_PI 3.14159265358979323846
 #define PIXELS 1200
+#define PHISPLIT 25
 #define ITERLIM 50
 #define NIMAGES 100
+
+const complex<double> i (0, 1);
 
 // define a path in a cartesian product of complex planes
 // through which a series of julia sets will be plotted
 // the vector returned must be ordered from as (an, ..., a0)
+// KEEP THE LEADING COEFFICIENT ABOVE EPS >> 0
 vector<complex<double>> path(double t) {
   return {
-    complex<double>(0.4*t, 0),
-    complex<double>(-t, 0.2*t),
+    complex<double>(1, 0),
     complex<double>(0, 0),
-    complex<double>(-1.2+t, -0.2)
+    complex<double>(1.2-t, -0.2)
   };
 }
 
 // theoretic convergence limit for a specific polynomial
-double getTheoreticEps(vector<complex<double>> &coefs) {
+double getTheoreticEps(const vector<complex<double>> &coefs) {
   int n = coefs.size();
   double an = abs(coefs[0]);
   double sum = 0;
@@ -69,6 +72,29 @@ int convergance(
   return count;
 }
 
+// convergence limit based on a test simulation
+double getSimulatedEps(
+  const vector<complex<double>> &coefs, 
+  const double &itereps, 
+  const int &splitnum
+) {
+  double maxradius = 0;
+  double z0 = PIXELS * itereps;
+  double r = 1 / (double) PIXELS;
+  double dphi = M_PI / (double) splitnum;
+  for (double phi = 0; phi < M_PI; phi += dphi) {
+    complex<double> z;
+    complex<double> dz = r * exp(i * phi);
+    for (z = z0 * dz; abs(z) > r; z -= dz) {
+      int count = convergance(z, coefs, itereps);
+      if (count > 3) break;
+    }
+    if (abs(z) > maxradius) 
+      maxradius = abs(z);
+  }
+  return maxradius;
+}
+
 inline complex<double> coordTranslate(
   const int &i, const int &j, const double &eps
 ) {
@@ -77,47 +103,19 @@ inline complex<double> coordTranslate(
   return complex<double> (x, y);
 }
 
-inline complex<double> circle(
-  const double &phi, const double &r
-) {
-  return complex<double>(
-    r * std::cos(phi), r * std::sin(phi)
-  );
-}
-
-// convergence limit based on a test simulation
-double getSimulatedEps(
-  const vector<complex<double>> &coefs, 
-  const double &itereps,
-  const int &splitnum
-) {
-  double maxradius = 0;
-  double r = 1 / (double) PIXELS;
-  double dphi = M_PI / (double) itereps;
-  for (double phi = 0; phi < M_PI; phi += dphi) {
-    complex<double> dz = circle(phi, r);
-    for (complex<double> z = 0; abs(z) < itereps; z += dz) {
-      int count = convergance(z, coefs, itereps);
-      if (count < 3) {
-        double z_radius = abs(z);
-        if (maxradius < z_radius) maxradius = z_radius;
-        break;
-      }
-    }
-  }
-  return (maxradius == 0) ? itereps : maxradius;
-}
-
 inline void ppmBasicColorStream(ofstream &ppm, const int &count) {
   double ratio = (count == ITERLIM) ? 0 : (double) count / ITERLIM;
   ppm << floor(ratio * 255) << " 0 0  ";
 }
 
 void writeJuliaPpm(
-  vector<complex<double>> &coefs, string filename
+  const vector<complex<double>> &coefs, 
+  const string &filename
 ) {
-  double theor_eps = getTheoreticEps(coefs);
-  double simul_eps = getSimulatedEps(coefs, theor_eps, 10);
+  double eps = getTheoreticEps(coefs);
+  eps = getSimulatedEps(
+      coefs, eps, PHISPLIT
+  );
 
   ofstream ppm;
   ppm.open(filename);
@@ -128,8 +126,8 @@ void writeJuliaPpm(
 
   for (int j = 0; j < PIXELS; j++) {
     for (int i = 0; i < PIXELS; i++) {
-      complex<double> z = coordTranslate(i, j, simul_eps);
-      int count = convergance(z, coefs, simul_eps);
+      complex<double> z = coordTranslate(i, j, eps);
+      int count = convergance(z, coefs, eps);
       ppmBasicColorStream(ppm, count);
     }
     ppm << endl;
@@ -138,7 +136,7 @@ void writeJuliaPpm(
 }
 
 int main( void ) {
-  double t0 = -1, t1 = 2;
+  double t0 = 0.5, t1 = 3;
   double step = (t1 - t0) / NIMAGES;
   double t = t0;
   for (int i = 0; i < NIMAGES; i++) {
@@ -146,7 +144,7 @@ int main( void ) {
     string stri = std::to_string(i);
     string filename = "images/julia_" + stri + ".ppm";
     
-    vector<complex<double>> coefs = path(t);
+    const vector<complex<double>> coefs = path(t);
     writeJuliaPpm(coefs, filename);
     std::cout << i << endl;
   }
