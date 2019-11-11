@@ -14,26 +14,25 @@ using std::string;
 using std::ofstream;
 using std::endl;
 using std::max;
-using std::min;
-using std::floor;
 
 #define M_PI 3.14159265358979323846
-#define PIXELS 1200
-#define PHISPLIT 25
+#define PIXELS 1500
+#define PHISPLIT 60
 #define ITERLIM 50
-#define NIMAGES 100
+#define NIMAGES 500
 
 const complex<double> i (0, 1);
 
 // define a path in a cartesian product of complex planes
 // through which a series of julia sets will be plotted
 // the vector returned must be ordered from as (an, ..., a0)
-// KEEP THE LEADING COEFFICIENT ABOVE EPS >> 0
+// KEEP THE LEADING COEFFICIENT FAR AWAY FROM 0
 vector<complex<double>> path(double t) {
   return {
     complex<double>(1, 0),
-    complex<double>(0, 0),
-    complex<double>(1.2-t, -0.2)
+    complex<double>(-0.1 + sin(t), 0.5 - cos(t)),
+    complex<double>(0.1 * t * sin(t), cos(t)),
+    complex<double>(0.5, t*0.1 - 0.2)
   };
 }
 
@@ -79,18 +78,17 @@ double getSimulatedEps(
   const int &splitnum
 ) {
   double maxradius = 0;
-  double z0 = PIXELS * itereps;
-  double r = 1 / (double) PIXELS;
-  double dphi = M_PI / (double) splitnum;
-  for (double phi = 0; phi < M_PI; phi += dphi) {
+  double r = 2 * itereps / (double) PIXELS;
+  double dphi = 2 * M_PI / (double) splitnum;
+  for (double phi = 0; phi < 2 * M_PI; phi += dphi) {
     complex<double> z;
     complex<double> dz = r * exp(i * phi);
-    for (z = z0 * dz; abs(z) > r; z -= dz) {
+    complex<double> z0 = (double) PIXELS * dz;
+    for (z = z0; abs(z) > r; z -= dz) {
       int count = convergance(z, coefs, itereps);
-      if (count > 3) break;
+      if (count > 2) break;
     }
-    if (abs(z) > maxradius) 
-      maxradius = abs(z);
+    if (abs(z) > maxradius) maxradius = abs(z);
   }
   return maxradius;
 }
@@ -105,17 +103,15 @@ inline complex<double> coordTranslate(
 
 inline void ppmBasicColorStream(ofstream &ppm, const int &count) {
   double ratio = (count == ITERLIM) ? 0 : (double) count / ITERLIM;
-  ppm << floor(ratio * 255) << " 0 0  ";
+  ppm << std::floor(ratio * 255) << " 0 0  ";
 }
 
 void writeJuliaPpm(
   const vector<complex<double>> &coefs, 
   const string &filename
 ) {
-  double eps = getTheoreticEps(coefs);
-  eps = getSimulatedEps(
-      coefs, eps, PHISPLIT
-  );
+  double teps = getTheoreticEps(coefs);
+  double seps = getSimulatedEps(coefs, teps, PHISPLIT);
 
   ofstream ppm;
   ppm.open(filename);
@@ -126,8 +122,8 @@ void writeJuliaPpm(
 
   for (int j = 0; j < PIXELS; j++) {
     for (int i = 0; i < PIXELS; i++) {
-      complex<double> z = coordTranslate(i, j, eps);
-      int count = convergance(z, coefs, eps);
+      complex<double> z = coordTranslate(i, j, seps);
+      int count = convergance(z, coefs, seps);
       ppmBasicColorStream(ppm, count);
     }
     ppm << endl;
@@ -136,7 +132,7 @@ void writeJuliaPpm(
 }
 
 int main( void ) {
-  double t0 = 0.5, t1 = 3;
+  double t0 = -4 * M_PI, t1 = 4 * M_PI;
   double step = (t1 - t0) / NIMAGES;
   double t = t0;
   for (int i = 0; i < NIMAGES; i++) {
