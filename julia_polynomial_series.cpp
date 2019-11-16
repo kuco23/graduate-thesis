@@ -9,19 +9,19 @@
 
 using std::complex;
 using std::vector;
-using std::pair;
 using std::string;
 using std::ofstream;
 using std::endl;
 using std::max;
 
 #define M_PI 3.14159265358979323846
-#define PIXELS 1500
+#define PIXELS 2000
 #define PHISPLIT 60
 #define ITERLIM 50
 #define NIMAGES 500
 
 const complex<double> i (0, 1);
+const double dphi = 2 * M_PI / (double) PHISPLIT;
 
 // define a path in a cartesian product of complex planes
 // through which a series of julia sets will be plotted
@@ -29,10 +29,10 @@ const complex<double> i (0, 1);
 // KEEP THE LEADING COEFFICIENT FAR AWAY FROM 0
 vector<complex<double>> path(double t) {
   return {
-    complex<double>(1, 0),
-    complex<double>(-0.1 + sin(t), 0.5 - cos(t)),
-    complex<double>(0.1 * t * sin(t), cos(t)),
-    complex<double>(0.5, t*0.1 - 0.2)
+    complex<double>(sin(t) / 10,0.5),
+    complex<double>(0.01*t*cos(t), 0.001*sin(t)),
+    complex<double>(cos(t), -sin(2*t)),
+    complex<double>(-sin(t)/10, t/10)
   };
 }
 
@@ -74,12 +74,10 @@ int convergance(
 // convergence limit based on a test simulation
 double getSimulatedEps(
   const vector<complex<double>> &coefs, 
-  const double &itereps, 
-  const int &splitnum
+  const double &itereps
 ) {
   double maxradius = 0;
   double r = 2 * itereps / (double) PIXELS;
-  double dphi = 2 * M_PI / (double) splitnum;
   for (double phi = 0; phi < 2 * M_PI; phi += dphi) {
     complex<double> z;
     complex<double> dz = r * exp(i * phi);
@@ -111,7 +109,7 @@ void writeJuliaPpm(
   const string &filename
 ) {
   double teps = getTheoreticEps(coefs);
-  double seps = getSimulatedEps(coefs, teps, PHISPLIT);
+  double seps = getSimulatedEps(coefs, teps);
 
   ofstream ppm;
   ppm.open(filename);
@@ -132,7 +130,7 @@ void writeJuliaPpm(
 }
 
 int main( void ) {
-  double t0 = -4 * M_PI, t1 = 4 * M_PI;
+  double t0 = -2*M_PI, t1 = 2*M_PI;
   double step = (t1 - t0) / NIMAGES;
   double t = t0;
   for (int i = 0; i < NIMAGES; i++) {

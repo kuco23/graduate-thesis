@@ -4,6 +4,7 @@ import cv2
 
 args = ArgumentParser()
 args.add_argument('name', metavar='video name', type=str)
+args.add_argument('fps', metavar='frames per second', type=int)
 vals = args.parse_args()
 
 direct = Path().cwd() / 'images'
@@ -21,7 +22,8 @@ fourc = cv2.VideoWriter_fourcc(*'DIVX')
 video = cv2.VideoWriter(
     vals.name + '.avi',
     fourc,
-    15, (width, height)
+    vals.fps,
+    (width, height)
 )
 
 for img in imgs: video.write(img)

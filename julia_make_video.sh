@@ -1,15 +1,16 @@
 name="julia_polynomial_series"
 folder_name="images"
+fps=15
 
 mkdir -p $folder_name &&
-rm $folder_name/*.ppm &&
+rm -f $folder_name/*.ppm &&
 echo "Compiling the code ..." &&
-g++ julia_polynomial_series.cpp -o $name &&
+g++ "${name}.cpp" -o $name &&
 echo "Finished Compiling" &&
 echo "Creating ppm files ..." &&
-./julia_polynomial_series.exe &&
+./"${name}.exe" &&
 echo "Finished making ppm files" &&
-rm julia_polynomial_series.exe &&
+rm -f "${name}.exe" &&
 echo "Making video ..." &&
-python ppms_to_avi.py $name &&
+python ppms_to_avi.py $name $fps&&
 echo "Finished video"
