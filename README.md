@@ -18,7 +18,7 @@ being defined as a complex path) to a video.
 Programs producing multiple images (later used to
 be merged into a video) are written in **C++**,  while
 the programs used for producing a single image
-are in **Python ** and accept terminal provided
+are in **Python** and accept terminal provided
 arguments for single image customization.
 
 ### The Math
