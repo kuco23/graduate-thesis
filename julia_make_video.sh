@@ -1,6 +1,6 @@
 name="julia_polynomial_series"
 folder_name="images"
-fps=15
+fps=20
 
 mkdir -p $folder_name &&
 rm -f $folder_name/*.ppm &&

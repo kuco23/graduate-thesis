@@ -6,7 +6,7 @@ set with custom parameters
 iterlim = 40
 iterfun = lambda z, c: z * z + c
 
-def writePPM(file, px, re, im, col):
+def drawMandelbrotPPM(file, px, re, im, col):
     (r1, r2), (i1, i2) = re, im
 
     def setPoint(i, j):
@@ -73,4 +73,6 @@ if __name__ == '__main__':
     ppm_file = vals.fn + '.ppm'
     open(ppm_file, 'a').close()
     with open(ppm_file, 'w', encoding='ascii') as f:
-        writePPM(f, vals.px, vals.re, vals.im, vals.rgb)
+        drawMandelbrotPPM(
+            f, vals.px, vals.re, vals.im, vals.rgb
+        )

@@ -15,10 +15,10 @@ using std::endl;
 using std::max;
 
 #define M_PI 3.14159265358979323846
-#define PIXELS 2000
-#define PHISPLIT 60
 #define ITERLIM 50
-#define NIMAGES 500
+#define PHISPLIT 60
+#define PIXELS 1200
+#define NIMAGES 1
 
 const complex<double> i (0, 1);
 const double dphi = 2 * M_PI / (double) PHISPLIT;
@@ -86,7 +86,7 @@ double getSimulatedEps(
       int count = convergance(z, coefs, itereps);
       if (count > 2) break;
     }
-    if (abs(z) > maxradius) maxradius = abs(z);
+    if (abs(z) > maxradius) maxradius = abs(z) + r;
   }
   return maxradius;
 }
@@ -101,6 +101,7 @@ inline complex<double> coordTranslate(
 
 inline void ppmBasicColorStream(ofstream &ppm, const int &count) {
   double ratio = (count == ITERLIM) ? 0 : (double) count / ITERLIM;
+  if (count == 1) ratio = (double) 2 / ITERLIM; // simulation's gradient fix
   ppm << std::floor(ratio * 255) << " 0 0  ";
 }
 
@@ -130,7 +131,7 @@ void writeJuliaPpm(
 }
 
 int main( void ) {
-  double t0 = -2*M_PI, t1 = 2*M_PI;
+  double t0 = -3*M_PI, t1 = 3*M_PI;
   double step = (t1 - t0) / NIMAGES;
   double t = t0;
   for (int i = 0; i < NIMAGES; i++) {
