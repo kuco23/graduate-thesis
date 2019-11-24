@@ -1,3 +1,4 @@
+__pycache__
 *.txt
 *.png
 *.jpg
@@ -9,3 +10,4 @@ nameimgs
 keeperimgs
 images
 videos
+map_name_to_frac.py
