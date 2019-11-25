@@ -17,12 +17,12 @@ using std::max;
 #define M_PI 3.14159265358979323846
 #define ITERLIM 50
 #define PHISPLIT 60
-#define PIXELS 1200
-#define NIMAGES 1
+#define PIXELS 800
+#define NIMAGES 40
 
 const complex<double> i (0, 1);
 const double dphi = 2 * M_PI / (double) PHISPLIT;
-const double t0 = -3 * M_PI, t1 = 3 * M_PI;
+const double t0 = -2, t1 = 1;
 const double dt = (t1 - t0) / NIMAGES;
 
 // define a path in a cartesian product of complex planes
@@ -31,10 +31,9 @@ const double dt = (t1 - t0) / NIMAGES;
 // KEEP THE LEADING COEFFICIENT FAR AWAY FROM 0
 vector<complex<double>> path(double t) {
   return {
-    complex<double>(sin(t) / 10,0.5),
-    complex<double>(0.01*t*cos(t), 0.001*sin(t)),
-    complex<double>(cos(t), -sin(2*t)),
-    complex<double>(-sin(t)/10, t/10)
+    complex<double>(1, 0),
+    complex<double>(0, 0),
+    complex<double>(t, 0)
   };
 }
 
@@ -142,14 +141,17 @@ double staticEps( void ) {
   return eps;
 }
 
-void imageSeries(bool static_img) {
+void imageSeries(
+  const string dirname, 
+  const bool static_img
+) {
   double eps = (static_img) ? staticEps() : 0;
   double t = t0;
   for (int i = 0; i < NIMAGES; i++) {
     t += dt;
 
     string stri = std::to_string(i);
-    string filename = "images/julia_" + stri + ".ppm";
+    string filename = dirname + "/julia_" + stri + ".ppm";
 
     const vector<complex<double>> coefs = path(t);
     if (!static_img) {
@@ -163,6 +165,7 @@ void imageSeries(bool static_img) {
 }
 
 int main( void ) {
-  imageSeries(false);
+  string dirname = "images";
+  imageSeries(dirname, true);
   return 0;
 }
