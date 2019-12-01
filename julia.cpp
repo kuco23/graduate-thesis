@@ -2,6 +2,7 @@
 
 int main( void ) {
     Julia julia;
-    julia.imageSeries(true);
+    string dirname = "images";
+    julia.imageSeries(dirname, true);
     return 0;
 }

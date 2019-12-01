@@ -35,7 +35,7 @@ private:
         const double &eps, const string &filename
     );
 public:
-    void imageSeries(bool static_img);
+    void imageSeries(const string dirname, const bool static_img);
 };
 
 #endif
