@@ -7,6 +7,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "../include/julia_polynomial_seres.h"
+
 using std::complex;
 using std::vector;
 using std::string;
@@ -21,15 +23,15 @@ using std::max;
 #define NIMAGES 1
 
 const complex<double> i (0, 1);
-const double dphi = 2 * M_PI / (double) PHISPLIT;
-const double t0 = -3 * M_PI, t1 = 3 * M_PI;
-const double dt = (t1 - t0) / NIMAGES;
+double dphi = 2 * M_PI / (double) PHISPLIT;
+double t0 = -3 * M_PI, t1 = 3 * M_PI;
+double dt = (t1 - t0) / NIMAGES;
 
-// define a path in a cartesian product of complex planes
+// define a Julia:: in a cartesian product of complex planes
 // through which a series of julia sets will be plotted
 // the vector returned must be ordered from as (an, ..., a0)
 // KEEP THE LEADING COEFFICIENT FAR AWAY FROM 0
-vector<complex<double>> path(double t) {
+vector<complex<double>> Julia::path(double t) {
   return {
     complex<double>(sin(t) / 10,0.5),
     complex<double>(0.01*t*cos(t), 0.001*sin(t)),
@@ -39,7 +41,7 @@ vector<complex<double>> path(double t) {
 }
 
 // theoretic convergence limit for a specific polynomial
-double theoreticEps(const vector<complex<double>> &coefs) {
+double Julia::theoreticEps(const vector<complex<double>> &coefs) {
   int n = coefs.size();
   double an = abs(coefs[0]);
   double sum = 0;
@@ -50,7 +52,7 @@ double theoreticEps(const vector<complex<double>> &coefs) {
   ;
 }
 
-inline complex<double> horner(
+inline complex<double> Julia::horner(
   const vector<complex<double>> &coefs, 
   const complex<double> &z
 ) {
@@ -60,21 +62,21 @@ inline complex<double> horner(
   return sum;
 }
 
-int convergance(
+int Julia::convergance(
   complex<double> z, 
   const vector<complex<double>> &coefs, 
   const double &eps
 ) {
   int count = 1;
   while (count < ITERLIM && abs(z) <= eps) {
-    z = horner(coefs, z);
+    z = Julia::horner(coefs, z);
     count++;
   }
   return count;
 }
 
 // convergence limit based on a test simulation
-double simulatedEps(
+double Julia::simulatedEps(
   const vector<complex<double>> &coefs, 
   const double &itereps
 ) {
@@ -85,7 +87,7 @@ double simulatedEps(
     complex<double> dz = r * exp(i * phi);
     complex<double> z0 = (double) PIXELS * dz;
     for (z = z0; abs(z) > r; z -= dz) {
-      int count = convergance(z, coefs, itereps);
+      int count = Julia::convergance(z, coefs, itereps);
       if (count > 2) break;
     }
     if (abs(z) > maxradius) maxradius = abs(z) + r;
@@ -93,7 +95,7 @@ double simulatedEps(
   return maxradius;
 }
 
-inline complex<double> coordTranslate(
+inline complex<double> Julia::coordTranslate(
   const int &i, const int &j, const double &eps
 ) {
   double x = 2 * eps * (double) i / PIXELS - eps;
@@ -101,13 +103,13 @@ inline complex<double> coordTranslate(
   return complex<double> (x, y);
 }
 
-inline void ppmBasicColorStream(ofstream &ppm, const int &count) {
+inline void Julia::ppmBasicColorStream(ofstream &ppm, const int &count) {
   double ratio = (count == ITERLIM) ? 0 : (double) count / ITERLIM;
   if (count == 1) ratio = (double) 2 / ITERLIM; // simulation's gradient fix
   ppm << std::floor(ratio * 255) << " 0 0  ";
 }
 
-void writeJuliaPpm(
+void Julia::writeJuliaPpm(
   const vector<complex<double>> &coefs, 
   const double &eps,
   const string &filename
@@ -122,28 +124,28 @@ void writeJuliaPpm(
   for (int j = 0; j < PIXELS; j++) {
     for (int i = 0; i < PIXELS; i++) {
       complex<double> z = coordTranslate(i, j, eps);
-      int count = convergance(z, coefs, eps);
-      ppmBasicColorStream(ppm, count);
+      int count = Julia::convergance(z, coefs, eps);
+      Julia::ppmBasicColorStream(ppm, count);
     }
     ppm << endl;
   }
 
 }
 
-double staticEps( void ) {
+double Julia::staticEps( void ) {
   double t = t0, eps = 0;
   for (int i = 0; i < NIMAGES; i++) {
     t += dt; 
-    const vector<complex<double>> coefs = path(t);
-    double teps = theoreticEps(coefs);
-    double seps = simulatedEps(coefs, teps);
+    const vector<complex<double>> coefs = Julia::path(t);
+    double teps = Julia::theoreticEps(coefs);
+    double seps = Julia::simulatedEps(coefs, teps);
     if (eps < seps) eps = seps;
   }
   return eps;
 }
 
-void imageSeries(bool static_img) {
-  double eps = (static_img) ? staticEps() : 0;
+void Julia::imageSeries(bool static_img) {
+  double eps = (static_img) ? Julia::staticEps() : 0;
   double t = t0;
   for (int i = 0; i < NIMAGES; i++) {
     t += dt;
@@ -151,18 +153,13 @@ void imageSeries(bool static_img) {
     string stri = std::to_string(i);
     string filename = "images/julia_" + stri + ".ppm";
 
-    const vector<complex<double>> coefs = path(t);
+    const vector<complex<double>> coefs = Julia::path(t);
     if (!static_img) {
-      double teps = theoreticEps(coefs);
+      double teps = Julia::theoreticEps(coefs);
       double seps = simulatedEps(coefs, teps);
-      writeJuliaPpm(coefs, seps, filename);
-    } else writeJuliaPpm(coefs, eps, filename);
+      Julia::writeJuliaPpm(coefs, seps, filename);
+    } else Julia::writeJuliaPpm(coefs, eps, filename);
     
     std::cout << i << endl;
   }
-}
-
-int main( void ) {
-  imageSeries(false);
-  return 0;
 }
