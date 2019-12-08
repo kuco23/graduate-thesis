@@ -1,4 +1,4 @@
-#include "include/julia_polynomial_seres.h"
+#include "include/julia_polynomial_series.h"
 
 int main( void ) {
     Julia julia;

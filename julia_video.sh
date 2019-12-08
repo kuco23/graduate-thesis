@@ -5,7 +5,7 @@ fps=20
 mkdir -p $folder_name &&
 rm -f $folder_name/*.ppm &&
 echo "Compiling the code ..." &&
-g++ "${name}.cpp" -o $name &&
+g++ julia.cpp "lib/${name}.cpp" -o $name &&
 echo "Finished Compiling" &&
 echo "Creating ppm files ..." &&
 ./"${name}.exe" &&

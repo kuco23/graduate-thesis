@@ -7,7 +7,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "../include/julia_polynomial_seres.h"
+#include "../include/julia_polynomial_series.h"
 
 using std::complex;
 using std::vector;
@@ -158,7 +158,7 @@ void Julia::imageSeries(
     const vector<complex<double>> coefs = Julia::path(t);
     if (!static_img) {
       double teps = Julia::theoreticEps(coefs);
-      double seps = simulatedEps(coefs, teps);
+      double seps = Julia::simulatedEps(coefs, teps);
       Julia::writeJuliaPpm(coefs, seps, filename);
     } else Julia::writeJuliaPpm(coefs, eps, filename);
   }
