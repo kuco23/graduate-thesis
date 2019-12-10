@@ -88,6 +88,6 @@ void Mandelbrot::zoom(double speed, int frames)  {
     string stri = std::to_string(i);
     string filename = "images/mandelbrot_" + stri + ".ppm";
     Mandelbrot::writePPM(filename);
-    Mandelbrot::zoom(speed);
+    Mandelbrot::imageZoom(speed);
   }
 }

@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <numeric>
 #include <string>
-#include <iostream>
 #include <fstream>
 
 #include "../include/julia_polynomial_series.h"
@@ -17,30 +16,25 @@ using std::endl;
 using std::max;
 
 #define M_PI 3.14159265358979323846
+const complex<double> i (0, 1);
+
+// config
 #define ITERLIM 50
 #define PHISPLIT 60
-#define PIXELS 800
-#define NIMAGES 40
+#define dphi 2 * M_PI / (double) PHISPLIT
 
-const complex<double> i (0, 1);
-const double dphi = 2 * M_PI / (double) PHISPLIT;
-const double t0 = -2, t1 = 1;
-const double dt = (t1 - t0) / NIMAGES;
-
-// define a Julia:: in a cartesian product of complex planes
-// through which a series of julia sets will be plotted
-// the vector returned must be ordered from as (an, ..., a0)
-// KEEP THE LEADING COEFFICIENT FAR AWAY FROM 0
-vector<complex<double>> Julia::path(double t) {
-  return {
-    complex<double>(1, 0),
-    complex<double>(0, 0),
-    complex<double>(t, 0)
-  };
+Julia::Julia (
+  string dirname, int nframes, 
+  double t0, double t1, int pixels, 
+  complex_path path, ppm_stream stream
+) : dirname(dirname), nframes(nframes), t0(t0), t1(t1), pixels(pixels) {
+  this->path = path;
+  this->stream = stream;
+  this->dt = (t1 - t0) / nframes;
 }
 
 // theoretic convergence limit for a specific polynomial
-double Julia::theoreticEps(const vector<complex<double>> &coefs) {
+double Julia::theoreticEps(const complex_polynomial &coefs) {
   int n = coefs.size();
   double an = abs(coefs[0]);
   double sum = 0;
@@ -52,7 +46,7 @@ double Julia::theoreticEps(const vector<complex<double>> &coefs) {
 }
 
 inline complex<double> Julia::horner(
-  const vector<complex<double>> &coefs, 
+  const complex_polynomial &coefs, 
   const complex<double> &z
 ) {
   complex<double> sum (0, 0);
@@ -63,7 +57,7 @@ inline complex<double> Julia::horner(
 
 int Julia::convergance(
   complex<double> z, 
-  const vector<complex<double>> &coefs, 
+  const complex_polynomial &coefs, 
   const double &eps
 ) {
   int count = 1;
@@ -76,15 +70,15 @@ int Julia::convergance(
 
 // convergence limit based on a test simulation
 double Julia::simulatedEps(
-  const vector<complex<double>> &coefs, 
+  const complex_polynomial &coefs, 
   const double &itereps
 ) {
   double maxradius = 0;
-  double r = 2 * itereps / (double) PIXELS;
+  double r = 2 * itereps / (double) pixels;
   for (double phi = 0; phi < 2 * M_PI; phi += dphi) {
     complex<double> z;
     complex<double> dz = r * exp(i * phi);
-    complex<double> z0 = (double) PIXELS * dz;
+    complex<double> z0 = (double) pixels * dz;
     for (z = z0; abs(z) > r; z -= dz) {
       int count = Julia::convergance(z, coefs, itereps);
       if (count > 2) break;
@@ -97,19 +91,13 @@ double Julia::simulatedEps(
 inline complex<double> Julia::coordTranslate(
   const int &i, const int &j, const double &eps
 ) {
-  double x = 2 * eps * (double) i / PIXELS - eps;
-  double y = 2 * eps * (double) j / PIXELS - eps;
+  double x = 2 * eps * (double) i / pixels - eps;
+  double y = 2 * eps * (double) j / pixels - eps;
   return complex<double> (x, y);
 }
 
-inline void Julia::ppmBasicColorStream(ofstream &ppm, const int &count) {
-  double ratio = (count == ITERLIM) ? 0 : (double) count / ITERLIM;
-  if (count == 1) ratio = (double) 2 / ITERLIM; // simulation's gradient fix
-  ppm << std::floor(ratio * 255) << " 0 0  ";
-}
-
 void Julia::writeJuliaPpm(
-  const vector<complex<double>> &coefs, 
+  const complex_polynomial &coefs, 
   const double &eps,
   const string &filename
 ) {
@@ -117,14 +105,14 @@ void Julia::writeJuliaPpm(
   ppm.open(filename);
 
   ppm << "P3" << endl;
-  ppm << PIXELS << " " << PIXELS << endl;
+  ppm << pixels << " " << pixels << endl;
   ppm << 255 << endl;
 
-  for (int j = 0; j < PIXELS; j++) {
-    for (int i = 0; i < PIXELS; i++) {
+  for (int j = 0; j < pixels; j++) {
+    for (int i = 0; i < pixels; i++) {
       complex<double> z = coordTranslate(i, j, eps);
       int count = Julia::convergance(z, coefs, eps);
-      Julia::ppmBasicColorStream(ppm, count);
+      Julia::stream(ppm, count, ITERLIM);
     }
     ppm << endl;
   }
@@ -133,9 +121,9 @@ void Julia::writeJuliaPpm(
 
 double Julia::staticEps( void ) {
   double t = t0, eps = 0;
-  for (int i = 0; i < NIMAGES; i++) {
+  for (int i = 0; i < this->nframes; i++) {
     t += dt; 
-    const vector<complex<double>> coefs = Julia::path(t);
+    const complex_polynomial coefs = Julia::path(t);
     double teps = Julia::theoreticEps(coefs);
     double seps = Julia::simulatedEps(coefs, teps);
     if (eps < seps) eps = seps;
@@ -143,25 +131,28 @@ double Julia::staticEps( void ) {
   return eps;
 }
 
-void Julia::imageSeries(
-  const string dirname, 
-  const bool static_img
-) {
-  double eps = (static_img) ? Julia::staticEps() : 0;
-  double t = t0;
-  for (int i = 0; i < NIMAGES; i++) {
+void Julia::staticImageSeries( void ) {
+  double t = t0, eps = Julia::staticEps();
+  for (int i = 0; i < nframes; i++) {
     t += dt;
-
     string stri = std::to_string(i);
     string filename = dirname + "/julia_" + stri + ".ppm";
 
-    const vector<complex<double>> coefs = Julia::path(t);
-    if (!static_img) {
-      double teps = Julia::theoreticEps(coefs);
-      double seps = Julia::simulatedEps(coefs, teps);
-      Julia::writeJuliaPpm(coefs, seps, filename);
-    } else Julia::writeJuliaPpm(coefs, eps, filename);
+    const complex_polynomial coefs = Julia::path(t);
+    Julia::writeJuliaPpm(coefs, eps, filename);
   }
 }
 
+void Julia::dynamicImageSeries( void ) {
+  double t = t0;
+  for (int i = 0; i < nframes; i++) {
+    t += dt;
+    string stri = std::to_string(i);
+    string filename = this->dirname + "/julia_" + stri + ".ppm";
 
+    const complex_polynomial coefs = Julia::path(t);
+    double teps = Julia::theoreticEps(coefs);
+    double seps = Julia::simulatedEps(coefs, teps);
+    Julia::writeJuliaPpm(coefs, seps, filename);
+  }
+}

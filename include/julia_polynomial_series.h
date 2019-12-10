@@ -5,30 +5,41 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <functional>
 
 using std::complex;
 using std::vector;
 using std::string;
 using std::ofstream;
+using std::function;
+
+typedef vector<complex<double>> complex_polynomial;
+typedef function<complex_polynomial(double)> complex_path;
+typedef function<void(ofstream&, const int&, const int)> ppm_stream;
 
 class Julia {
 private:
-    vector<complex<double>> path(double t);
+    string dirname;
+    complex_path path;
+    ppm_stream stream;
+    int nframes, pixels;
+    double t0, t1, dt;
+
     double theoreticEps(
-        const vector<complex<double>> &coefs
+        const complex_polynomial &coefs
     );
     inline complex<double> horner(
-        const vector<complex<double>> &coefs, 
+        const complex_polynomial &coefs, 
         const complex<double> &z
     );
     double simulatedEps(
-        const vector<complex<double>> &coefs, 
+        const complex_polynomial &coefs, 
         const double &itereps
     );
     double staticEps( void );
     int convergance(
         complex<double> z, 
-        const vector<complex<double>> &coefs,
+        const complex_polynomial &coefs,
         const double &eps
     );
     inline complex<double> coordTranslate(
@@ -41,15 +52,18 @@ private:
         const int &count
     );
     void writeJuliaPpm(
-        const vector<complex<double>> &coefs, 
+        const complex_polynomial &coefs, 
         const double &eps, 
         const string &filename
     );
 public:
-    void imageSeries(
-        const string dirname, 
-        const bool static_img
+    Julia (
+        string dirname, int nframes, 
+        double t0, double t1, int pixels,
+        complex_path path, ppm_stream stream
     );
+    void staticImageSeries( void );
+    void dynamicImageSeries( void );
 };
 
 #endif
