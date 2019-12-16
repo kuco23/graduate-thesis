@@ -13,9 +13,12 @@ using std::string;
 using std::ofstream;
 using std::function;
 
+#define M_PI 3.14159265358979323846
+const complex<double> i (0, 1);
+
 typedef vector<complex<double>> complex_polynomial;
 typedef function<complex_polynomial(double)> complex_path;
-typedef function<void(ofstream&, const int&, const int)> ppm_stream;
+typedef function<void(ofstream&, const int&)> ppm_stream;
 
 class Julia {
 private:

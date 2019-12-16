@@ -15,19 +15,24 @@ using std::ofstream;
 using std::endl;
 using std::max;
 
-#define M_PI 3.14159265358979323846
-const complex<double> i (0, 1);
-
-// config
 #define ITERLIM 50
 #define PHISPLIT 60
 #define dphi 2 * M_PI / (double) PHISPLIT
 
 Julia::Julia (
-  string dirname, int nframes, 
-  double t0, double t1, int pixels, 
-  complex_path path, ppm_stream stream
-) : dirname(dirname), nframes(nframes), t0(t0), t1(t1), pixels(pixels) {
+  string dirname, 
+  int nframes, 
+  double t0, 
+  double t1, 
+  int pixels, 
+  complex_path path, 
+  ppm_stream stream
+) {
+  this->nframes = nframes;
+  this->pixels = pixels;
+  this->t0 = t0; 
+  this->t1 = t1;
+  this->dirname = dirname;
   this->path = path;
   this->stream = stream;
   this->dt = (t1 - t0) / nframes;
@@ -112,7 +117,7 @@ void Julia::writeJuliaPpm(
     for (int i = 0; i < pixels; i++) {
       complex<double> z = coordTranslate(i, j, eps);
       int count = Julia::convergance(z, coefs, eps);
-      Julia::stream(ppm, count, ITERLIM);
+      Julia::stream(ppm, count);
     }
     ppm << endl;
   }
