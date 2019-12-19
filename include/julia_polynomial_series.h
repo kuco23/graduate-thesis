@@ -18,13 +18,13 @@ const complex<double> i (0, 1);
 
 typedef vector<complex<double>> complex_polynomial;
 typedef function<complex_polynomial(double)> complex_path;
-typedef function<void(ofstream&, const int&)> ppm_stream;
+typedef vector<vector<int>> color_series;
 
 class Julia {
 private:
     string dirname;
     complex_path path;
-    ppm_stream stream;
+    color_series gradient;
     int nframes, pixels;
     double t0, t1, dt;
 
@@ -40,7 +40,7 @@ private:
         const double &itereps
     );
     double staticEps( void );
-    int convergance(
+    int escapeCount(
         complex<double> z, 
         const complex_polynomial &coefs,
         const double &eps
@@ -50,7 +50,7 @@ private:
         const int &j, 
         const double &eps
     );
-    inline void ppmBasicColorStream(
+    inline void colorStream(
         ofstream &ppm, 
         const int &count
     );
@@ -61,9 +61,13 @@ private:
     );
 public:
     Julia (
-        string dirname, int nframes, 
-        double t0, double t1, int pixels,
-        complex_path path, ppm_stream stream
+        string dirname, 
+        int nframes, 
+        int pixels,
+        double t0, 
+        double t1, 
+        complex_path path, 
+        color_series base_colors
     );
     void staticImageSeries( void );
     void dynamicImageSeries( void );

@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "include/julia_polynomial_series.h"
-#include "include/color_picker.h"
+#include "include/colors.h"
 
 #define ITERLIM 50
 
@@ -21,21 +21,24 @@ complex_polynomial path(double t) {
   };
 }
 
-static color_series colors {};
-inline void colorStream(ofstream &ppm, const int &count) {
-  if (count == ITERLIM) ppm << "0 0 0  ";
-  else {
-    const vector<int> &picker = colors[(count == 1) ? 2 : count];
-    ppm << picker[0] << " " << picker[1] << " " << picker[2] << "  ";
-  }
-}
+color_series base_colors {
+  {0, 0, 0},
+  {10, 10, 40},
+  {50, 100, 244},
+  {255, 40, 50},
+  {0, 255, 255},
+  {255, 0, 255}
+};
+
 
 int main( void ) {
-  colors = color_picker::gradient(255, 255, 0, ITERLIM);
-  int nframes = 10;
+  color_series gradient = colors::make_gradient(
+    base_colors, ITERLIM + 1
+  );
+  int nframes = 100;
   double a = -2, b = 1;
   int pixels = 1500;
-  Julia julia ("images", nframes, a, b, pixels, &path, &colorStream);
+  Julia julia ("images", nframes, pixels, a, b, &path, gradient);
   julia.staticImageSeries();
   return 0;
 }

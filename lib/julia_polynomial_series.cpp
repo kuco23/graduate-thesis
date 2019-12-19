@@ -22,19 +22,19 @@ using std::max;
 Julia::Julia (
   string dirname, 
   int nframes, 
+  int pixels, 
   double t0, 
   double t1, 
-  int pixels, 
   complex_path path, 
-  ppm_stream stream
+  color_series gradient
 ) {
+  this->dirname = dirname;
   this->nframes = nframes;
   this->pixels = pixels;
   this->t0 = t0; 
   this->t1 = t1;
-  this->dirname = dirname;
   this->path = path;
-  this->stream = stream;
+  this->gradient = gradient;
   this->dt = (t1 - t0) / nframes;
 }
 
@@ -60,7 +60,7 @@ inline complex<double> Julia::horner(
   return sum;
 }
 
-int Julia::convergance(
+int Julia::escapeCount(
   complex<double> z, 
   const complex_polynomial &coefs, 
   const double &eps
@@ -85,7 +85,7 @@ double Julia::simulatedEps(
     complex<double> dz = r * exp(i * phi);
     complex<double> z0 = (double) pixels * dz;
     for (z = z0; abs(z) > r; z -= dz) {
-      int count = Julia::convergance(z, coefs, itereps);
+      int count = Julia::escapeCount(z, coefs, itereps);
       if (count > 2) break;
     }
     if (abs(z) > maxradius) maxradius = abs(z) + r;
@@ -101,6 +101,14 @@ inline complex<double> Julia::coordTranslate(
   return complex<double> (x, y);
 }
 
+inline void Julia::colorStream(ofstream &ppm, const int &count) {
+  if (count == ITERLIM) ppm << "0 0 0  ";
+  else {
+    const vector<int> &rgb = this->gradient[(count == 1) ? 2 : count];
+    ppm << rgb[0] << " " << rgb[1] << " " << rgb[2] << "  ";
+  }
+}
+
 void Julia::writeJuliaPpm(
   const complex_polynomial &coefs, 
   const double &eps,
@@ -108,20 +116,17 @@ void Julia::writeJuliaPpm(
 ) {
   ofstream ppm;
   ppm.open(filename);
-
   ppm << "P3" << endl;
   ppm << pixels << " " << pixels << endl;
   ppm << 255 << endl;
-
   for (int j = 0; j < pixels; j++) {
     for (int i = 0; i < pixels; i++) {
       complex<double> z = coordTranslate(i, j, eps);
-      int count = Julia::convergance(z, coefs, eps);
-      Julia::stream(ppm, count);
+      int count = Julia::escapeCount(z, coefs, eps);
+      Julia::colorStream(ppm, count);
     }
     ppm << endl;
   }
-
 }
 
 double Julia::staticEps( void ) {
@@ -142,7 +147,6 @@ void Julia::staticImageSeries( void ) {
     t += dt;
     string stri = std::to_string(i);
     string filename = dirname + "/julia_" + stri + ".ppm";
-
     const complex_polynomial coefs = Julia::path(t);
     Julia::writeJuliaPpm(coefs, eps, filename);
   }
@@ -154,7 +158,6 @@ void Julia::dynamicImageSeries( void ) {
     t += dt;
     string stri = std::to_string(i);
     string filename = this->dirname + "/julia_" + stri + ".ppm";
-
     const complex_polynomial coefs = Julia::path(t);
     double teps = Julia::theoreticEps(coefs);
     double seps = Julia::simulatedEps(coefs, teps);
