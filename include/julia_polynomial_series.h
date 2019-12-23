@@ -13,20 +13,18 @@ using std::string;
 using std::ofstream;
 using std::function;
 
-#define M_PI 3.14159265358979323846
-const complex<double> i (0, 1);
-
 typedef vector<complex<double>> complex_polynomial;
 typedef function<complex_polynomial(double)> complex_path;
-typedef vector<vector<int>> color_series;
+typedef vector<int> color;
 
 class Julia {
 private:
     string dirname;
     complex_path path;
-    color_series gradient;
+    vector<color> gradient;
     int nframes, pixels;
     double t0, t1, dt;
+    static const double dphi;
 
     double theoreticEps(
         const complex_polynomial &coefs
@@ -60,6 +58,8 @@ private:
         const string &filename
     );
 public:
+    static const int itercount;
+    static const int phisplit;
     Julia (
         string dirname, 
         int nframes, 
@@ -67,7 +67,7 @@ public:
         double t0, 
         double t1, 
         complex_path path, 
-        color_series base_colors
+        vector<color> base_colors
     );
     void staticImageSeries( void );
     void dynamicImageSeries( void );

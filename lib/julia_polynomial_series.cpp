@@ -15,9 +15,15 @@ using std::ofstream;
 using std::endl;
 using std::max;
 
-#define ITERLIM 50
+#define M_PI 3.14159265358979323846
+const complex<double> i (0, 1);
+
+#define ITERCOUNT 50
 #define PHISPLIT 60
-#define dphi 2 * M_PI / (double) PHISPLIT
+
+const int Julia::itercount = ITERCOUNT;
+const int Julia::phisplit = PHISPLIT;
+const double Julia::dphi = 2 * M_PI / (double) PHISPLIT;
 
 Julia::Julia (
   string dirname, 
@@ -26,7 +32,7 @@ Julia::Julia (
   double t0, 
   double t1, 
   complex_path path, 
-  color_series gradient
+  vector<color> gradient
 ) {
   this->dirname = dirname;
   this->nframes = nframes;
@@ -66,14 +72,14 @@ int Julia::escapeCount(
   const double &eps
 ) {
   int count = 1;
-  while (count < ITERLIM && abs(z) <= eps) {
+  while (count < ITERCOUNT && abs(z) <= eps) {
     z = Julia::horner(coefs, z);
     count++;
   }
   return count;
 }
 
-// convergence limit based on a test simulation
+// simulated convergance limit for a specific polynomial
 double Julia::simulatedEps(
   const complex_polynomial &coefs, 
   const double &itereps
@@ -102,9 +108,9 @@ inline complex<double> Julia::coordTranslate(
 }
 
 inline void Julia::colorStream(ofstream &ppm, const int &count) {
-  if (count == ITERLIM) ppm << "0 0 0  ";
+  if (count == ITERCOUNT) ppm << "0 0 0  ";
   else {
-    const vector<int> &rgb = this->gradient[(count == 1) ? 2 : count];
+    const color &rgb = this->gradient[(count == 1) ? 2 : count];
     ppm << rgb[0] << " " << rgb[1] << " " << rgb[2] << "  ";
   }
 }

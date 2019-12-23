@@ -1,8 +1,8 @@
 #include <vector>
 using std::vector;
 
-typedef vector<vector<int>> color_series;
+typedef vector<int> color;
 
 namespace colors {
-  color_series make_gradient(color_series base_colors, int length);
+  vector<color> make_gradient(vector<color> base_colors, int length);
 }
