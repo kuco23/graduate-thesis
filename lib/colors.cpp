@@ -1,5 +1,14 @@
 #include <cmath>
+#include <random>
+#include <chrono>
+#include <algorithm>
 #include "../include/colors.h"
+
+using namespace std::chrono;
+
+unsigned seed = system_clock::now().time_since_epoch().count();
+std::default_random_engine generator(seed);
+std::uniform_int_distribution<int> random_int(0, 255);
 
 vector<double> direct(
   const vector<int> &u, 
@@ -53,4 +62,15 @@ vector<color> colors::make_gradient(
     series.insert(series.end(), temp.begin(), temp.end());
   }
   return series;
+}
+
+vector<color> colors::color_chaos(int length) {
+  vector<color> color_series {};
+  for (int i = 0; i < length; i++) {
+    color rgb {-1, -1, -1};
+    for (int j = 0; j < 3; j++) 
+      rgb[j] = random_int(generator);
+    color_series.push_back(rgb);
+  }
+  return color_series;
 }

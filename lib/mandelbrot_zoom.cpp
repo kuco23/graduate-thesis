@@ -1,26 +1,48 @@
 #include <cmath>
 #include <complex>
+#include <vector>
 #include <string>
 #include <iostream>
 #include <fstream>
 #include <algorithm>
-
 #include "../include/mandelbrot_zoom.h"
 
 using std::complex;
+using std::vector;
 using std::floor;
 using std::max;
 using std::string;
 using std::ofstream;
 using std::endl;
 
-#define PX 1200
-#define NIMAGES 100
-#define ITERLIM 40
+using std::cout;
 
-double re0 = -2, re1 = 2;
-double im0 = -2, im1 = 2;
-complex<double> center (-2, 0);
+#define ITERCOUNT 40
+int Mandelbrot::itercount = ITERCOUNT;
+
+Mandelbrot::Mandelbrot(
+  string dirname, 
+  int pixels,
+  int nframes,
+  double speed,
+  double re0,
+  double re1,
+  double im0,
+  double im1,
+  complex<double> zoom_point,
+  vector<color> gradient
+) {
+  this->dirname = dirname;
+  this->pixels = pixels;
+  this->nframes = nframes;
+  this->speed = speed;
+  this->re0 = re0;
+  this->re1 = re1;
+  this->im0 = im0;
+  this->im1 = im1;
+  this->zoom_point = zoom_point;
+  this->gradient = gradient;
+}
 
 inline complex<double> Mandelbrot::mandelbrotPolynomial(
   const complex<double> &z, 
@@ -30,10 +52,10 @@ inline complex<double> Mandelbrot::mandelbrotPolynomial(
 }
 
 int Mandelbrot::convergance(const complex<double> &point) {
-  double eps = max(abs(point), 2.0);
+  double eps = 2; 
   int count = 0;
   complex<double> z (0, 0);
-  while (count < ITERLIM && abs(z) <= eps) {
+  while (count < Mandelbrot::itercount && abs(z) <= eps) {
     z = Mandelbrot::mandelbrotPolynomial(z, point);
     count++;
   }
@@ -43,51 +65,53 @@ int Mandelbrot::convergance(const complex<double> &point) {
 complex<double> Mandelbrot::coordTranslate(
   const int &i, const int &j
 ) {
-  double x = (double) i * (re1 - re0) / PX + re0;
-  double y = (double) j * (im1 - im0) / PX + im0;
-  return complex<double> (x, y);
+  return complex<double> (
+    (double) i * (re1 - re0) / this->pixels + re0,
+    (double) j * (im1 - im0) / this->pixels + im0
+  );
 }
 
-inline int Mandelbrot::setGradient(const int &count) {
-  if (count == ITERLIM)
-    return 0;
-  return floor(((double) count / ITERLIM) * 255);
+inline void Mandelbrot::setGradient(ofstream &ppm, const int &count) {
+  if (count == this->itercount) ppm << "0 0 0  ";
+  else {
+    const color &rgb = this->gradient[(count == 1) ? 2 : count];
+    ppm << rgb[0] << " " << rgb[1] << " " << rgb[2] << "  ";
+  }
 }
 
 void Mandelbrot::writePPM(string filename) {
   ofstream ppm;
   ppm.open(filename);
-
   ppm << "P3" << endl;
-  ppm << PX << " " << PX << endl;
+  ppm << this->pixels << " " << this->pixels << endl;
   ppm << 255 << endl;
-
-  for (int j = 0; j < PX; j++) {
-    for (int i = 0; i < PX; i++) {
+  for (int j = 0; j < this->pixels; j++) {
+    for (int i = 0; i < this->pixels; i++) {
       int count = Mandelbrot::convergance(
         Mandelbrot::coordTranslate(i, j)
       );
-      ppm << Mandelbrot::setGradient(count) << " 0 0  ";
+      Mandelbrot::setGradient(ppm, count);
     }
     ppm << endl;
   }
-
 }
 
-void Mandelbrot::imageZoom(const double &speed) {
-  double center_re = center.real();
-  double center_im = center.imag();
-  re0 = center_re - (center_re - re0) * speed;
-  im0 = center_im - (center_im - im0) * speed;
-  re1 = center_re + (re1 - center_re) * speed;
-  im1 = center_im + (im1 - center_im) * speed;
+void Mandelbrot::zoom( void ) {
+  double rx = this->zoom_point.real();
+  double ry = this->zoom_point.imag();
+  this->re0 = rx - (rx - this->re0) * this->speed;
+  this->im0 = ry - (ry - this->im0) * this->speed;
+  this->re1 = rx + (this->re1 - rx) * this->speed;
+  this->im1 = ry + (this->im1 - ry) * this->speed;
 }
 
-void Mandelbrot::zoom(double speed, int frames)  {
-  for (int i = 0; i < frames; i++) {
+void Mandelbrot::mandelbrotZoom( void )  {
+  for (int i = 0; i < this->nframes; i++) {
     string stri = std::to_string(i);
-    string filename = "images/mandelbrot_" + stri + ".ppm";
+    string filename = this->dirname + "/mandelbrot_" + stri + ".ppm";
     Mandelbrot::writePPM(filename);
-    Mandelbrot::imageZoom(speed);
+    cout << this->re0 << " " << this->re1 << std::endl;
+    cout << this->im0 << " " << this->im1 << std::endl;
+    Mandelbrot::zoom();
   }
 }

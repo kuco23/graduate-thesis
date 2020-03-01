@@ -108,7 +108,7 @@ inline complex<double> Julia::coordTranslate(
 }
 
 inline void Julia::colorStream(ofstream &ppm, const int &count) {
-  if (count == ITERCOUNT) ppm << "0 0 0  ";
+  if (count == this->itercount) ppm << "0 0 0  ";
   else {
     const color &rgb = this->gradient[(count == 1) ? 2 : count];
     ppm << rgb[0] << " " << rgb[1] << " " << rgb[2] << "  ";
