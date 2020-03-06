@@ -2,7 +2,7 @@
 #include <random>
 #include <chrono>
 #include <algorithm>
-#include "../include/colors.h"
+#include "../include/color_mixer.h"
 
 using namespace std::chrono;
 
@@ -22,7 +22,7 @@ vector<double> direct(
   return direction;
 }
 
-vector<color> color_path(
+vector<color> colorPath(
   color &rgb1, 
   color &rgb2, 
   int npoints
@@ -44,13 +44,13 @@ vector<color> color_path(
   return series;
 }
 
-vector<color> colors::make_gradient(
+vector<color> color_mixer::makeGradient (
   vector<color> base_colors, 
   int length
 ) {
   int base_length = base_colors.size();
-  int modulo_margin = std::floor((double) length / (base_length - 1));
-  int leftover = length % modulo_margin;
+  int modulo_margin = length / (base_length - 1);
+  int leftover = length % (base_length - 1);
   vector<color> series {};
   for (int i = 1; i < base_length; i++) {
     int margin = modulo_margin;
@@ -58,13 +58,15 @@ vector<color> colors::make_gradient(
       margin++;
       leftover--;
     }
-    vector<color> temp = color_path(base_colors[i-1], base_colors[i], margin);
+    vector<color> temp = colorPath(
+      base_colors[i-1], base_colors[i], margin
+    );
     series.insert(series.end(), temp.begin(), temp.end());
   }
   return series;
 }
 
-vector<color> colors::color_chaos(int length) {
+vector<color> color_mixer::colorChaos(int length) {
   vector<color> color_series {};
   for (int i = 0; i < length; i++) {
     color rgb {-1, -1, -1};

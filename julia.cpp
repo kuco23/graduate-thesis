@@ -2,7 +2,7 @@
 #include <vector>
 #include <iostream>
 #include "include/julia_polynomial_series.h"
-#include "include/colors.h"
+#include "include/color_mixer.h"
 
 using std::complex;
 using std::vector;
@@ -30,11 +30,11 @@ vector<color> base_colors {
 
 
 int main( void ) {
-  vector<color> gradient = colors::make_gradient(base_colors, Julia::itercount);
+  vector<color> gradient = color_mixer::makeGradient(base_colors, Julia::itercount);
   int pixels = 1500;
   int nframes = 200;
   double a = -8, b = 8;
-  Julia julia ("images", nframes, pixels, a, b, &path, gradient);
+  Julia julia ("temp_imgs", nframes, pixels, a, b, &path, gradient);
   julia.dynamicImageSeries();
   return 0;
 }

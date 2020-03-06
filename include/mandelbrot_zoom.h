@@ -2,11 +2,13 @@
 #define COMPLEX_POLYNOMIAL_DYNAMICS_MANDELBROT_ZOOM_H
 
 #include <vector>
+#include <utility>
 #include <complex>
 #include <string>
 #include <fstream>
 
 using std::vector;
+using std::pair;
 using std::complex;
 using std::string;
 using std::ofstream;
@@ -15,25 +17,20 @@ typedef vector<int> color;
 
 class Mandelbrot {
 private:
-	string dirname;
-	int pixels, nframes;
-	double speed;
-	double re0, re1, im0, im1;
-	complex<double> zoom_point;
+	double speed, re0, re1, im0, im1;
 	vector<color> gradient;
 
-	inline complex<double> mandelbrotPolynomial(
-		const complex<double> &z, 
-		const complex<double> &c
-	);
-	int convergance(
+	int escapetime(
 		const complex<double> &point
 	);
-	complex<double> coordTranslate(
+	complex<double> coordsToComplex(
 		const int &i, 
 		const int &j
 	);
-	inline void setGradient(
+	inline void writeHeaders(
+		ofstream &ppm
+	);
+	inline void writeRGB(
 		ofstream &ppm, 
 		const int &count
 	);
@@ -41,22 +38,24 @@ private:
 		string filename
 	);
 	void zoom( void );
+	
 public:
+	string dirname;
+	int pixels, nframes;
+	complex<double> zoom_point;
+	vector<color> base_colors;
 	static int itercount;
-	void mandelbrotZoom ( void );
 
 	Mandelbrot (
 		string dirname,
 		int pixels,
 		int nframes,
 		double speed,
-		double re0,
-		double re1,
-		double im0,
-		double im1,
 		complex<double> zoom_point,
-		vector<color> gradient
+		double radius,
+		vector<color> base_colors
 	);
+	void mandelbrotZoom ( void );
 };
 
 #endif

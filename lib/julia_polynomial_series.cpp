@@ -5,7 +5,6 @@
 #include <numeric>
 #include <string>
 #include <fstream>
-
 #include "../include/julia_polynomial_series.h"
 
 using std::complex;
@@ -18,7 +17,7 @@ using std::max;
 #define M_PI 3.14159265358979323846
 const complex<double> i (0, 1);
 
-#define ITERCOUNT 50
+#define ITERCOUNT 100
 #define PHISPLIT 60
 
 const int Julia::itercount = ITERCOUNT;
@@ -71,11 +70,9 @@ int Julia::escapeCount(
   const complex_polynomial &coefs, 
   const double &eps
 ) {
-  int count = 1;
-  while (count < ITERCOUNT && abs(z) <= eps) {
+  int count;
+  for (count = 1; count < ITERCOUNT && abs(z) <= eps; count++)
     z = Julia::horner(coefs, z);
-    count++;
-  }
   return count;
 }
 

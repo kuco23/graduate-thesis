@@ -6,8 +6,8 @@ __pycache__
 *.exe
 *.avi
 .vscode
-nameimgs
 keeperimgs
-images
-videos
+keepervids
+temp_imgs
+temp_vids
 map_name_to_frac.py

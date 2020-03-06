@@ -6,10 +6,10 @@ echo "Setting up the image folder ..."
 mkdir -p $image_import_folder &&
 rm -f $image_import_folder/*.ppm &&
 echo "Compiling the code ..." &&
-g++ julia.cpp lib/julia_polynomial_series.cpp lib/color_mixer.cpp -o julia &&
+g++ mandelbrot.cpp lib/mandelbrot_zoom.cpp lib/color_mixer.cpp -o mandelbrot &&
 echo "Creating ppm files ..." &&
-./julia.exe &&
-rm -f julia.exe &&
+./mandelbrot.exe &&
+rm -f mandelbrot.exe &&
 echo "Making video ..." &&
-python ppms_to_avi.py $image_import_folder $video_export_folder"/julia_series.avi" $fps &&
+python ppms_to_avi.py $image_import_folder $video_export_folder"/mandelbrot_series.avi" $fps  &&
 echo "Finished video"
