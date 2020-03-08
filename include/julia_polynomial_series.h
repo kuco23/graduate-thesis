@@ -62,8 +62,8 @@ public:
     static const int phisplit;
     Julia (
         string dirname, 
-        int nframes, 
-        int pixels,
+        int pixels, 
+        int nframes,
         double t0, 
         double t1, 
         complex_path path, 

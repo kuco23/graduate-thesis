@@ -6,7 +6,7 @@
 using std::vector;
 
 const vector<color> base_colors {
-  {0, 0, 0},
+  {30, 45, 60},
   {153, 255, 255},
   {10, 20, 30},
   {255, 128, 0},
@@ -19,8 +19,8 @@ const vector<color> base_colors {
 
 int main( void ) {
   Mandelbrot mandelzoom (
-    "temp_imgs", 2000, 500, 0.03,
-    complex<double> (0.39, 0.18), 1,
+    "temp_imgs", 1000, 2000, 0.03,
+    complex<double> (-0.15173941795, -1.0329381), 1,
     base_colors
   );
   mandelzoom.mandelbrotZoom();

@@ -17,13 +17,14 @@ typedef vector<int> color;
 
 class Mandelbrot {
 private:
-	double speed, re0, re1, im0, im1;
+	int itercount;
+	double re0, re1, im0, im1, dre, dim;
 	vector<color> gradient;
 
 	int escapetime(
 		const complex<double> &point
 	);
-	complex<double> coordsToComplex(
+	inline complex<double> coordsToComplex(
 		const int &i, 
 		const int &j
 	);
@@ -38,13 +39,15 @@ private:
 		string filename
 	);
 	void zoom( void );
+	void setItercount( void );
+	void setGradient( void );
 	
 public:
 	string dirname;
 	int pixels, nframes;
 	complex<double> zoom_point;
 	vector<color> base_colors;
-	static int itercount;
+	double speed;
 
 	Mandelbrot (
 		string dirname,

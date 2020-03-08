@@ -3,41 +3,42 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include "../include/mandelbrot_zoom.h"
 #include "../include/color_mixer.h"
 
 using std::complex;
 using std::vector;
 using std::string;
+using std::to_string;
 using std::ofstream;
 using std::endl;
+using std::max;
 
+#define MIN_ITERCOUNT 300
 #define EPS 2
-#define DEFAULT_ITERCOUNT 200
-int Mandelbrot::itercount = DEFAULT_ITERCOUNT;
 
 Mandelbrot::Mandelbrot(
   string dirname, 
-  int pixels,
   int nframes,
+  int pixels,
   double speed,
   complex<double> zoom_point,
   double radius,
   vector<color> base_colors
 ) {
   this->dirname = dirname;
-  this->pixels = pixels;
   this->nframes = nframes;
+  this->pixels = pixels;
   this->speed = 1 - speed;
   this->zoom_point = zoom_point;
   this->base_colors = base_colors;
-  this->gradient = color_mixer::makeGradient(
-    base_colors, this->itercount
-  );
   this->re0 = zoom_point.real() - radius;
   this->re1 = zoom_point.real() + radius;
   this->im0 = zoom_point.imag() - radius;
   this->im1 = zoom_point.imag() + radius;
+  this->dre = (re1 - re0) / pixels;
+  this->dim = (im1 - im0) / pixels;
 }
 
 int Mandelbrot::escapetime(const complex<double> &point) {
@@ -48,12 +49,12 @@ int Mandelbrot::escapetime(const complex<double> &point) {
   return count;
 }
 
-complex<double> Mandelbrot::coordsToComplex(
+inline complex<double> Mandelbrot::coordsToComplex(
   const int &i, const int &j
 ) {
   return complex<double> (
-    (double) i * (re1 - re0) / this->pixels + re0,
-    (double) j * (im1 - im0) / this->pixels + im0
+    (double) i * this->dre + re0,
+    (double) j * this->dim + im0
   );
 }
 
@@ -68,7 +69,7 @@ inline void Mandelbrot::writeRGB(
 ) {
   if (count == this->itercount) ppm << "0 0 0  ";
   else {
-    const color &rgb = this->gradient[(count == 1) ? 2 : count];
+    const color &rgb = this->gradient[count];
     ppm << rgb[0] << " " << rgb[1] << " " << rgb[2] << "  ";
   }
 }
@@ -91,13 +92,28 @@ void Mandelbrot::zoom( void ) {
   this->re1 = rx + (this->re1 - rx) * this->speed;
   this->im0 = ry - (ry - this->im0) * this->speed;
   this->im1 = ry + (this->im1 - ry) * this->speed;
+  this->dre = (this->re1 - this->re0) / this->pixels;
+  this->dim = (this->im1 - this->im0) / this->pixels;
+}
+
+void Mandelbrot::setItercount( void ) {
+  this->itercount = max(
+    1.0 / (1000 * (re1 - re0)), 
+    (double) MIN_ITERCOUNT 
+  );
+}
+
+void Mandelbrot::setGradient( void ) {
+  this->gradient = color_mixer::makeGradient(
+    this->base_colors, this->itercount
+  );
 }
 
 void Mandelbrot::mandelbrotZoom( void )  {
   for (int i = 0; i < this->nframes; i++) {
-    string stri = std::to_string(i);
-    string filename = this->dirname + "/mandelbrot_" + stri + ".ppm";
-    Mandelbrot::writePPM(filename);
-    Mandelbrot::zoom();
+    setItercount();
+    setGradient();
+    writePPM(dirname + "/mandelbrot_" + to_string(i) + ".ppm");
+    zoom();
   }
 }
