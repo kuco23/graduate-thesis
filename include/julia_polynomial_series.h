@@ -43,14 +43,12 @@ private:
         const complex_polynomial &coefs,
         const double &eps
     );
-    inline complex<double> coordTranslate(
-        const int &i, 
-        const int &j, 
-        const double &eps
-    );
     inline void colorStream(
         ofstream &ppm, 
         const int &count
+    );
+    inline void writeHeaders(
+        ofstream &ppm
     );
     void writeJuliaPpm(
         const complex_polynomial &coefs, 

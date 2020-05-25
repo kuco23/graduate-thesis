@@ -14,27 +14,36 @@ using std::vector;
 complex_polynomial path(double t) {
   return {
     complex<double>(1, 0),
-    complex<double>(0.1 * t, 1.2),
-    complex<double>(0.1, -0.2*t),
-    complex<double>(t / 10, 0)
+    complex<double>(0, 0),
+    complex<double>(t, 0)
   };
 }
 
-vector<color> base_colors {
-  {0, 0, 0},
-  {10, 20, 40},
-  {50, 100, 200},
-  {50, 100, 255},
-  {80, 240, 255}
+const vector<color> base_colors {
+  {30, 45, 60},
+  {153, 255, 255},
+  {10, 20, 30},
+  {255, 128, 0},
+  {102, 178, 255},
+  {255,0,255},
+  {204, 204, 255},
+  {51, 255, 51},
+  {153, 255, 255}
 };
 
-
 int main( void ) {
-  vector<color> gradient = color_mixer::makeGradient(base_colors, Julia::itercount);
-  int pixels = 1500;
-  int nframes = 200;
-  double a = -8, b = 8;
-  Julia julia ("temp_imgs", nframes, pixels, a, b, &path, gradient);
+  vector<color> gradient = color_mixer::makeGradient(
+    base_colors, Julia::itercount
+  );
+  int pixels = 2000;
+  int nframes = 400;
+  double a = -2, b = 1.5;
+  Julia julia (
+    "temp_imgs", 
+    nframes, pixels, 
+    a, b, &path, 
+    gradient
+  );
   julia.dynamicImageSeries();
   return 0;
 }

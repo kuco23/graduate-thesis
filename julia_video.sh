@@ -1,6 +1,6 @@
 image_import_folder="temp_imgs"
-video_export_folder="temp_vids"
-fps=25
+video_export_folder="videos"
+fps=30
 
 echo "Setting up the image folder ..."
 mkdir -p $image_import_folder &&
@@ -11,5 +11,6 @@ echo "Creating ppm files ..." &&
 ./julia.exe &&
 rm -f julia.exe &&
 echo "Making video ..." &&
+mkdir -p $video_export_folder &&
 python ppms_to_avi.py $image_import_folder $video_export_folder"/julia_series.avi" $fps &&
 echo "Finished video"

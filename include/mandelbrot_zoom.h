@@ -18,15 +18,11 @@ typedef vector<int> color;
 class Mandelbrot {
 private:
 	int itercount;
-	double re0, re1, im0, im1, dre, dim;
+	double re0, re1, im0, im1, dre, dim, r;
 	vector<color> gradient;
 
 	int escapetime(
 		const complex<double> &point
-	);
-	inline complex<double> coordsToComplex(
-		const int &i, 
-		const int &j
 	);
 	inline void writeHeaders(
 		ofstream &ppm
@@ -39,6 +35,8 @@ private:
 		string filename
 	);
 	void zoom( void );
+	void setSquare ( void );
+	void setSteps ( void );
 	void setItercount( void );
 	void setGradient( void );
 	
