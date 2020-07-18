@@ -6,6 +6,7 @@ __pycache__
 *.exe
 *.avi
 .vscode
+images
 keeperimgs
 keepervids
 temp_imgs
