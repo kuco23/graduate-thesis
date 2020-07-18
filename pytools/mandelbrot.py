@@ -3,7 +3,9 @@ draw one instance of the mandelbrot
 set with custom parameters
 """
 
-iterlim = 40
+from cmath import sqrt
+
+iterlim = 100
 iterfun = lambda z, c: z * z + c
 
 def drawMandelbrotPPM(file, px, re, im, col):
@@ -21,6 +23,13 @@ def drawMandelbrotPPM(file, px, re, im, col):
             z = iterfun(z, point)
             count += 1
         return count
+
+    def inCardioidCircle(point):
+        return (
+            abs(1 - sqrt(1 - 4 * point)) < 1 or
+            abs(1 + sqrt(1 + 4 * point)) < 1 or
+            abs(1 + point) < 0.25
+        )
     
     def getGradientBase(count):
         if count == iterlim:
@@ -28,13 +37,15 @@ def drawMandelbrotPPM(file, px, re, im, col):
         return (255 * count) // iterlim
 
     ppm_header = ['P3\n', f'{px} {px}\n', '255\n']
-    for h in ppm_header: file.write(h)
+    file.writelines(ppm_header)
         
     for j in range(px):
         file.write('\n')
         for i in range(px):
             point = setPoint(i, j)
-            count = pointConvergance(point)
+            count = iterlim
+            if not inCardioidCircle(point):
+                count = pointConvergance(point)
             base = getGradientBase(count)
             r, g, b = map(lambda c: (c / 255) * base, col)
             file.write(f'{r} {g} {b}  ')

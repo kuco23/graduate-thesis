@@ -19,8 +19,8 @@ const vector<color> base_colors {
 
 int main( void ) {
   Mandelbrot mandelzoom (
-    "temp_imgs", 1000, 2000, 0.03,
-    complex<double> (-0.15173941795, -1.0329381), 1,
+    "temp_imgs", 1, 2000, 0.03,
+    complex<double> (0, 0), 2,
     base_colors
   );
   mandelzoom.mandelbrotZoom();
