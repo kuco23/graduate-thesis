@@ -17,8 +17,8 @@ using std::max;
 #define M_PI 3.14159265358979323846
 const complex<double> i (0, 1);
 
-#define ITERCOUNT 100
-#define PHISPLIT 60
+#define ITERCOUNT 250
+#define PHISPLIT 100
 
 const int Julia::itercount = ITERCOUNT;
 const int Julia::phisplit = PHISPLIT;
@@ -96,12 +96,10 @@ double Julia::simulatedEps(
   return maxradius;
 }
 
-inline complex<double> Julia::coordTranslate(
-  const int &i, const int &j, const double &eps
-) {
-  double x = 2 * eps * (double) i / pixels - eps;
-  double y = 2 * eps * (double) j / pixels - eps;
-  return complex<double> (x, y);
+inline void Julia::writeHeaders(ofstream &ppm) {
+  ppm << "P3" << endl;
+  ppm << this->pixels << " " << this->pixels << endl;
+  ppm << 255 << endl;
 }
 
 inline void Julia::colorStream(ofstream &ppm, const int &count) {
@@ -119,17 +117,21 @@ void Julia::writeJuliaPpm(
 ) {
   ofstream ppm;
   ppm.open(filename);
-  ppm << "P3" << endl;
-  ppm << pixels << " " << pixels << endl;
-  ppm << 255 << endl;
+  writeHeaders(ppm);
+  complex<double> z = complex<double> (-eps, -eps);
+  complex<double> dz_re = complex<double> (2 * eps / pixels, 0);
+  complex<double> dz_im = complex<double> (0, 2 * eps / pixels);
   for (int j = 0; j < pixels; j++) {
     for (int i = 0; i < pixels; i++) {
-      complex<double> z = coordTranslate(i, j, eps);
       int count = Julia::escapeCount(z, coefs, eps);
       Julia::colorStream(ppm, count);
+      z += dz_re;
     }
+    z += dz_im;
+    z.real(-eps);
     ppm << endl;
   }
+  ppm.close();
 }
 
 double Julia::staticEps( void ) {

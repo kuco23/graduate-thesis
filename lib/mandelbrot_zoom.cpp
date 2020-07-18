@@ -15,7 +15,7 @@ using std::ofstream;
 using std::endl;
 using std::max;
 
-#define MIN_ITERCOUNT 300
+#define MIN_ITERCOUNT 3000
 #define EPS 2
 
 Mandelbrot::Mandelbrot(
@@ -33,12 +33,7 @@ Mandelbrot::Mandelbrot(
   this->speed = 1 - speed;
   this->zoom_point = zoom_point;
   this->base_colors = base_colors;
-  this->re0 = zoom_point.real() - radius;
-  this->re1 = zoom_point.real() + radius;
-  this->im0 = zoom_point.imag() - radius;
-  this->im1 = zoom_point.imag() + radius;
-  this->dre = (re1 - re0) / pixels;
-  this->dim = (im1 - im0) / pixels;
+  this->r = radius;
 }
 
 int Mandelbrot::escapetime(const complex<double> &point) {
@@ -47,15 +42,6 @@ int Mandelbrot::escapetime(const complex<double> &point) {
   for (count = 0; count < itercount && abs(z) <= EPS; count++)
     z = z * z + point;
   return count;
-}
-
-inline complex<double> Mandelbrot::coordsToComplex(
-  const int &i, const int &j
-) {
-  return complex<double> (
-    (double) i * this->dre + re0,
-    (double) j * this->dim + im0
-  );
 }
 
 inline void Mandelbrot::writeHeaders(ofstream &ppm) {
@@ -74,31 +60,26 @@ inline void Mandelbrot::writeRGB(
   }
 }
 
-void Mandelbrot::writePPM(string filename) {
-  ofstream ppm;
-  ppm.open(filename);
-  writeHeaders(ppm);
-  for (int j = 0; j < this->pixels; j++) {
-    for (int i = 0; i < this->pixels; i++)
-      writeRGB(ppm, escapetime(coordsToComplex(i, j)));
-    ppm << endl;
-  }
+void Mandelbrot::zoom( void ) {
+  this->r *= this->speed;
 }
 
-void Mandelbrot::zoom( void ) {
-  double rx = this->zoom_point.real();
-  double ry = this->zoom_point.imag();
-  this->re0 = rx - (rx - this->re0) * this->speed;
-  this->re1 = rx + (this->re1 - rx) * this->speed;
-  this->im0 = ry - (ry - this->im0) * this->speed;
-  this->im1 = ry + (this->im1 - ry) * this->speed;
-  this->dre = (this->re1 - this->re0) / this->pixels;
-  this->dim = (this->im1 - this->im0) / this->pixels;
+void Mandelbrot::setSquare ( void ) {
+  this->re0 = zoom_point.real() - r;
+  this->re1 = zoom_point.real() + r;
+  this->im0 = zoom_point.imag() - r;
+  this->im1 = zoom_point.imag() + r;
+}
+
+void Mandelbrot::setSteps ( void ) {
+  this->dre = (re1 - re0) / pixels;
+  this->dim = (im1 - im0) / pixels;
 }
 
 void Mandelbrot::setItercount( void ) {
-  this->itercount = max(
-    1.0 / (1000 * (re1 - re0)), 
+  this->itercount = (int) max(
+    10653.0,
+    //5.0 / sqrt(r), 
     (double) MIN_ITERCOUNT 
   );
 }
@@ -109,10 +90,31 @@ void Mandelbrot::setGradient( void ) {
   );
 }
 
+void Mandelbrot::writePPM(string filename) {
+  setSquare();
+  setSteps();
+  setItercount();
+  setGradient();
+  ofstream ppm;
+  ppm.open(filename);
+  writeHeaders(ppm);
+  complex<double> z = complex<double> (re0, im0);
+  complex<double> dz_re = complex<double> (dre, 0);
+  complex<double> dz_im = complex<double> (0, dim);
+  for (int j = 0; j < this->pixels; j++) {
+    for (int i = 0; i < this->pixels; i++) {
+      writeRGB(ppm, escapetime(z));
+      z += dz_re;
+    }
+    z += dz_im;
+    z.real(re0);
+    ppm << endl;
+  }
+  ppm.close();
+}
+
 void Mandelbrot::mandelbrotZoom( void )  {
   for (int i = 0; i < this->nframes; i++) {
-    setItercount();
-    setGradient();
     writePPM(dirname + "/mandelbrot_" + to_string(i) + ".ppm");
     zoom();
   }
