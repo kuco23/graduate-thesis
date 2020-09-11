@@ -1,7 +1,45 @@
 """
-Disclaimer: koda ni clovesko berljiva
-Nariši sliko Juliajeve ali Mandelbrotove množice,
-pri poljubnih parametrih.
+Orodje, za risanje Juliajeve ali Mandelbrotove množice,
+pri dolocenih parametrih.
+
+Par nasvetov glede uporabe argumentov:
+ - Barvne tablee so definirane na povezavi
+   https://matplotlib.org/3.1.0/tutorials/colors/colormaps.html
+ - Risanje Juliajevih množic brez argumentov o centru in radiju
+   povzroci, da program te doloci sam.
+   V primeru, da je podan center, mora biti podan tudi radij.
+ - Escapetime ponavadi invertira barvo notranjosti množice
+   s to najbolj zunanjo. To lahko dosežemo z nastavitvijo
+   argumenta -sh (shift) na True
+ - Pri algoritmu DEM je velikokrat problem, da ne dosežemo
+   barve najvišjega gradienta v primerih, ko je notranjost
+   množice prazna. Ker se pri DEM algoritmu barve zvezno
+   približujejo zanimivim delom, težko locimo temnejše
+   dele od bolj svetlejših. To rešimo z argumentom -cpc
+   (colormap percentile), ki vzame tri vrednosti.
+   Prva je percentil vrednosti, ki jih vrne algoritem DEM,
+   druga je potenca, ki jo apliciramo na normirane vrednosti,
+   ki so manjše od percentila, tretja pa potenca, ki jo
+   apliciramo na vecje vrednosti.
+
+Primeri klicev s terminala:
+ python fractal_script.py
+ "1 0 -0.7510894579318156+0.11771693494277351j"
+ -cm cubehelix -cmo normal
+
+ python fractal_script.py
+ "1 0 -0.7510894579318156+0.11771693494277351j"
+ -cm cubehelix -cmo normal -cpc 91 4 0.25
+
+ python fractal_script.py
+ "1 0 0.1567002004882749+0.6527033090669409j"
+ -cm magma -it 1000 -cmo normal -cpc 85 2 0.25
+
+ python fractal_script.py mandelbrot
+ -cm gist_stern -it 200
+
+ python fractal_script.py mandelbrot
+ -alg escapetime -cm gist_stern -it 100 -sh True
 """
 
 import math, cmath
@@ -11,40 +49,31 @@ from matplotlib.colors import Normalize
 import numpy as np
 
 I = 0 + 1j
-overflow = 10**10
+
+overflow = 10**20
+non_escape_count = 3
+phisplit = 80
+L = 1.000001
+
 quadabs = lambda z: z.real * z.real + z.imag * z.imag
 
 def diferentiate(poly):
     n, an = len(poly) - 1, poly[0]
-    return [
-        (n - i) * an for (i, an) in enumerate(poly[:-1])
-    ]
+    return [(n - i) * an for (i, an) in enumerate(poly[:-1])]
 
 def horner(p, z):
     return reduce(lambda x, y: z * x + y, p)
 
-def pointGenerator(ReS, ImS, radius, px):
-    dim = dre = 2 * radius / px
-    dz = complex(dre, 0)
-    zk = complex(ReS, ImS)
-    for i in range(px):
-        for j in range(px):
-            zk += dz
-            yield zk
-        zk = complex(ReS, zk.imag + dim)
-
-def drawJuliaPolynomialPPM(
-    ppm, poly, center, radius, alg, iterlim,
-    px, cmap, order, power, shift, perc
+def algorithmJulia(
+    poly, radius, alg, iterlim, px
 ):
-    phisplit = 80
-    L = 1.0001
-    
     n = len(poly) - 1
     an = abs(poly[0])
     C = sum(map(abs, poly)) - an
     eps = max(1, 2 * C / 2, pow(2 * L / an, 1 / (n-1)))
     eps_quad = pow(eps, 2)
+
+    if alg == 'dem': dpdz = diferentiate(poly)
 
     def escapetimeCount(z, lim=iterlim):
         zk, count = z, 0
@@ -52,65 +81,25 @@ def drawJuliaPolynomialPPM(
             zk = horner(poly, zk)
             count += 1
         return count
-        
-    def escapetime():
-        gradient = [
-            ' '.join(map(str, map(round, rgba[:3])))
-            for rgba in 255 * colormap(
-                pow(np.linspace(0, 1, iterlim), power)
-            )
-        ] + ['0 0 0']
-        points = pointGenerator()
-        for i in range(px):
-            ppm.write('\n')
-            for j in range(px):
-                count = escapetimeCount(next(points))
-                ppm.write(gradient[count] + '  ')
-            
-    def dem():
-        def demCount(z):
-            zk, dk = z, 1
-            for _ in range(iterlim):
-                if max(
-                    abs(zk.real) + abs(zk.imag),
-                    abs(dk.real) + abs(dk.imag)
-                ) > overflow: break
-                dk = horner(dpdz, zk) * dk
-                zk = horner(poly, zk)
-            abszk = abs(zk)
-            if abszk < eps: return 0
-            else:
-                estimate = math.log2(abszk) * abszk / abs(dk)
-                return -math.log2(estimate)
 
-        dpdz = diferentiate(poly)
-        points = pointGenerator(ReS, ImS, radius, px)
-        pixels = np.empty((px, px), dtype=float)
-        for j in range(px):
-            for i in range(px):
-                pixels[i][j] = demCount(next(points))
-                
-        m, M = pixels.min(), pixels.max()
-        pixels[pixels == 0] = m if shift else M
-        normed = Normalize(m, M)(pixels)
-    
-        if perc is not None:
-            p, pf, pc = perc
-            q = np.percentile(normed, p)
-            filt = normed <= q
-            normed[filt] = pow(normed[filt], pf)
-            normed[~filt] = pow(normed[~filt], pc)
-        elif power != 1:
-            normed = pow(normed, power)
+    def demCount(z):
+        zk, dk = z, 1
+        for _ in range(iterlim):
+            if max(
+                abs(zk.real) + abs(zk.imag),
+                abs(dk.real) + abs(dk.imag)
+            ) > overflow: break
+            dk = horner(dpdz, zk) * dk
+            zk = horner(poly, zk)
+        abszk = abs(zk)
+        if abszk < eps: return 0
+        else:
+            absdk = abs(dk)
+            if absdk == 0: return -1
+            estimate = math.log2(abszk) * abszk / absdk
+            return -math.log2(estimate)
 
-        gradient = colormap(normed)
-        for j in range(px):
-            ppm.write('\n')
-            for i in range(px):
-                rgb = map(round, 255 * gradient[i][j][:3])
-                ppm.write(' '.join(map(str, rgb)) + '  ')
-
-    def simulatedEps():
+    def simulatedRadius():
         maxradius = 0
         r = eps / px
         rquad = r * r
@@ -119,97 +108,116 @@ def drawJuliaPolynomialPPM(
             dz = r * cmath.exp(I * phi)
             z = px * dz
             while quadabs(z) > rquad:
-                count = escapetimeCount(z, 3)
-                if count > 2: break
+                count = escapetimeCount(z, non_escape_count)
+                if count == non_escape_count: break
                 z -= dz
             if quadabs(z) > maxradius:
                 maxradius = quadabs(z)
             phi += dphi
         return math.sqrt(maxradius) + 10 * r
 
-    if not radius: radius = simulatedEps()
-    cx, cy = center
-    ReS, ReT = cx - radius, cx + radius
-    ImS, ImT = cy - radius, cy + radius
-
-    ppm.writelines(['P3\n', f'{px} {px}\n', '255\n'])
-    colormap = cm.get_cmap(cmap)
-    if order == 'reversed': colormap = colormap.reversed()
-
-    locals()[alg]()
+    return (
+        locals()[alg + 'Count'],
+        radius or simulatedRadius()
+    )
 
 
-def drawMandelbrotPPM(
-    ppm, center, radius, alg, iterlim,
-    px, cmap, order, cmp, shift
+def algorithmMandelbrot(
+    radius, alg, iterlim
 ):
-    cx, cy = center
-    ReS, ReT = cx - radius, cx + radius
-    ImS, ImT = cy - radius, cy + radius
+    def escapetimeCount(c):
+        ck, count = complex(0, 0), 0
+        while count < iterlim and quadabs(ck) <= 4:
+            ck *= ck
+            ck += c
+            count += 1
+        return count
 
-    ppm.writelines(['P3\n', f'{px} {px}\n', '255\n'])
+    def demCount(c):
+        ck, dk = c, 1
+        for _ in range(iterlim):
+            if max(
+                abs(ck.real) + abs(ck.imag),
+                abs(dk.real) + abs(dk.imag)
+            ) > overflow: break
+            dk = 2 * ck * dk + 1
+            ck *= ck
+            ck += c
+        absck = abs(ck)
+        if absck <= 2: return 0
+        else:
+            absdk = abs(dk)
+            if absdk == 0: return -1
+            estimate = math.log2(absck) * absck / absdk
+            return -math.log2(estimate)
+
+    return (
+        locals()[alg + 'Count'],
+        radius or 2.2
+    )
+
+
+def drawFractalPPM(
+    ppm, poly, center, radius, alg, iterlim,
+    px, cmap, order, power, shift, perc
+):
     colormap = cm.get_cmap(cmap)
-    if order == 'reversed': colormap = colormap.reversed()
+    if order == 'reversed':
+        colormap = colormap.reversed()
+    
+    if poly == 'mandelbrot':
+        countAlgo, radius = algorithmMandelbrot(
+            radius, alg, iterlim
+        )
+    else:
+        poly = list(map(complex, poly.split()))
+        countAlgo, radius = algorithmJulia(
+            poly, radius, alg, iterlim, px
+        )
 
-    def escapetime():
-        gradient = [
-            ' '.join(map(str, map(round, rgba[:3])))
-            for rgba in 255 * colormap(
-                pow(np.linspace(0, 1, iterlim), cmp)
-            )
-        ] + ['0 0 0']
-        
-        def escapetimeCount(c):
-            ck, count = complex(0, 0), 0
-            while count < iterlim and quadabs(ck) <= 4:
-                ck *= ck
-                ck += c
-                count += 1
-            return count
-
-        points = pointGenerator(ReS, ImS, radius, px)
+    def pointGenerator():
+        cx, cy = center.real, center.imag
+        ReS, ReT = cx - radius, cx + radius
+        ImS, ImT = cy - radius, cy + radius
+        dim = dre = 2 * radius / px
+        dz = complex(dre, 0)
+        zk = complex(ReS, ImS)
         for i in range(px):
-            ppm.write('\n')
             for j in range(px):
-                count = escapetimeCount(next(points))
-                ppm.write(gradient[count] + '  ')
-
-    def dem():  
-        def demCount(c):
-            ck, dk = c, 1
-            for _ in range(iterlim):
-                if max(
-                    abs(ck.real) + abs(ck.imag),
-                    abs(dk.real) + abs(dk.imag)
-                ) > overflow: break
-                dk = 2 * ck * dk + 1
-                ck *= ck
-                ck += c
-            absck = abs(ck)
-            if absck <= 2: return 0
-            else:
-                estimate = math.log2(absck) * absck / abs(dk)
-                return -math.log2(estimate)
-
-        values = np.empty((px, px), dtype=float)
-        points = pointGenerator()
-        for j in range(px):
-            for i in range(px):
-                values[i][j] = demCount(next(points))
-
-        m, M = values.min(), values.max()
-        values[values == 0] = m if shift else M
-        norm = PowerNorm(cmp, m, M)
-        gradient = colormap(norm(values))
-        for j in range(px):
-            ppm.write('\n')
-            for i in range(px):
-                rgb = map(round, 255 * gradient[i][j][:3])
-                ppm.write(' '.join(map(str, rgb)) + '  ')
-
-    locals()[alg]()
-
+                zk += dz
+                yield zk
+            zk = complex(ReS, zk.imag + dim)
+    
+    points = pointGenerator()
+    pixels = np.empty((px, px), dtype=float)
+    for j in range(px):
+        for i in range(px):
+            pixels[i][j] = countAlgo(next(points))
             
+    m, M = pixels.min(), pixels.max()
+    if alg == 'dem': pixels[pixels == -1] = m
+    pixels[pixels == 0] = m if shift else M
+    normed = Normalize(m, M)(pixels)
+        
+    if perc is not None:
+        p, pf, pc = perc
+        q = np.percentile(normed, p)
+        filt = normed <= q
+        normed[filt] = pow(normed[filt], pf)
+        filt = ~filt
+        normed[filt] = pow(normed[filt], pc)
+    elif power != 1:
+        normed = pow(normed, power)
+
+    gradient = colormap(normed)
+    ppm.writelines(['P3\n', f'{px} {px}\n', '255\n'])
+    for j in range(px):
+        ppm.write('\n')
+        for i in range(px):
+            rgb = map(round, 255 * gradient[i][j][:3])
+            ppm.write(' '.join(map(str, rgb)) + '  ')
+    
+          
 if __name__ == '__main__':
 
     from argparse import ArgumentParser
@@ -220,21 +228,23 @@ if __name__ == '__main__':
         metavar = 'polynomial coefficients'
     )
     args.add_argument(
-        '-c', metavar='center point',
+        '-c', metavar=('x', 'y'),
         type=float, nargs=2,
-        default=(0, 0)
+        default=(0, 0),
+        help='center point'
     )
     args.add_argument(
         '-r', metavar='radius',
         type=float, default=None,
+        help='radius around the center point'
     )
     args.add_argument(
-        '-px', metavar='n x n pixels',
+        '-px', metavar='pixels',
         type=int, default=1000,
-        help='image pixels'
+        help='image pixels (px * px)'
     )
     args.add_argument(
-        '-it', metavar='n iterations',
+        '-it', metavar='iterations',
         type=int, default=250,
         help='number of iterations to aproximate limit'
     )
@@ -263,33 +273,44 @@ if __name__ == '__main__':
     args.add_argument(
         '-csh', metavar='color shift',
         type=bool, default=False,
-        help='color the set interior with the outer most color'
+        help=(
+            "color the set interior with "
+            "the outer most color"
+        )
     )
     args.add_argument(
-        '-cpc', metavar='colormap percentile',
+        '-cpc', metavar=('q', 'p1', 'p2'),
         type=float, default=None, nargs=3,
-        help='percentil of values to lower of which apply cmp'
+        help=(
+            "q - percentile; "
+            "p1 - power applied to x <= q'; "
+            "p2 - power applied to x > q'"
+        )
     )
     args.add_argument(
         '-fn', metavar='file name',
         type=str, default='fractal',
-        help='file name'
+        help='image file name'
     )
     vals = args.parse_args()
+    
+    if vals.c != (0, 0) and vals.r is None:
+        raise Exception(
+            "if center is non-trivial, then "
+            "radius must be provided"
+        )
+    elif (vals.cpc and vals.cmp != 1):
+        raise Exception(
+            "color map percentile and "
+            "colormap power cannot be provided both"
+        )
     
     filename = vals.fn + '.ppm'
     open(filename, 'a').close()
     with open(filename, 'w', encoding='utf-8') as ppm:
-        if vals.poly == 'mandelbrot':
-            drawMandelbrotPPM(
-                ppm, vals.c, vals.r or 2.2, vals.alg, vals.it,
-                vals.px, vals.cm, vals.cmo, vals.cmp, vals.csh,
-                vals.cpc
-            )   
-        else:
-            poly = list(map(complex, vals.poly.split()))
-            drawJuliaPolynomialPPM(
-                ppm, poly, vals.c, vals.r, vals.alg, vals.it,
-                vals.px, vals.cm, vals.cmo, vals.cmp, vals.csh,
-                vals.cpc
-            )
+        drawFractalPPM(
+            ppm, vals.poly, complex(*vals.c),
+            vals.r, vals.alg, vals.it,
+            vals.px, vals.cm, vals.cmo,
+            vals.cmp, vals.csh, vals.cpc
+        )
