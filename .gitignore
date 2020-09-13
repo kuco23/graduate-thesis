@@ -1,7 +1,5 @@
 __pycache__
 *.txt
-*.png
-*.jpg
 *.ppm
 *.exe
 *.avi
