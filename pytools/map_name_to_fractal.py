@@ -3,10 +3,7 @@ from hashlib import sha256
 from functools import reduce
 from pathlib import Path
 from argparse import ArgumentParser
-
-from julia_polynomial_singleton import (
-    drawJuliaPolynomialPPM_escapetime
-)
+from fractal_script import drawFractalPPM
 
 parser = ArgumentParser('map a name to fractal')
 parser.add_argument('name', metavar='name', type=str)
@@ -29,6 +26,7 @@ norm = reduce(hypot, map(abs, coefs))
 coefs = list(map(lambda z: 1.2 * z / norm, coefs))
 
 with open(cbin / filename, 'w') as file:
-    drawJuliaPolynomialPPM_escapetime(
-        coefs, 1200, None, None, [255, 0, 0], file
+    drawFractalPPM(
+        file, coefs, 0, None, 'dem', 250,
+        2000, 'gist_stern', 'reversed', 1, False, None
     )
