@@ -3,6 +3,7 @@ __pycache__
 *.ppm
 *.exe
 *.avi
+*.gz
 .vscode
 images
 keeperimgs
